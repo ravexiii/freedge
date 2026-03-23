@@ -2,9 +2,11 @@ package kg.freedge.ui.main
 
 import android.Manifest
 import android.content.Context
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
+import android.widget.Toast
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
@@ -23,7 +25,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,12 +36,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -297,6 +304,9 @@ fun ResultScreen(
     onRetry: () -> Unit,
     retryLabel: String = "Сфоткать ещё"
 ) {
+    val context = LocalContext.current
+    val clipboardManager = LocalClipboardManager.current
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -368,12 +378,48 @@ fun ResultScreen(
                             )
                         )
                     }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                clipboardManager.setText(AnnotatedString(result))
+                                Toast.makeText(context, "Скопировано", Toast.LENGTH_SHORT).show()
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ContentCopy,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text("Скопировать")
+                        }
+
+                        Button(
+                            onClick = { shareRecipe(context, result, imageBytes) },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Share,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text("Поделиться")
+                        }
+                    }
                 }
             }
         }
 
         // Кнопка — фиксированная внизу, не уезжает при скролле
-        Button(
+        OutlinedButton(
             onClick = onRetry,
             modifier = Modifier
                 .fillMaxWidth()
@@ -390,6 +436,35 @@ fun ResultScreen(
             Text(retryLabel)
         }
     }
+}
+
+private fun shareRecipe(context: Context, text: String, imageBytes: ByteArray?) {
+    val shareText = "$text\n\n—\nСгенерировано в Freedge"
+
+    val sendIntent = Intent().apply {
+        action = Intent.ACTION_SEND
+        putExtra(Intent.EXTRA_TEXT, shareText)
+        type = "text/plain"
+    }
+
+    imageBytes?.let { bytes ->
+        try {
+            val file = File(context.cacheDir, "freedge_share_${System.currentTimeMillis()}.jpg")
+            file.writeBytes(bytes)
+            val uri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.provider",
+                file
+            )
+            sendIntent.putExtra(Intent.EXTRA_STREAM, uri)
+            sendIntent.type = "image/jpeg"
+            sendIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        } catch (_: Exception) {
+            // шарим только текст
+        }
+    }
+
+    context.startActivity(Intent.createChooser(sendIntent, "Поделиться рецептом"))
 }
 
 private fun getRotationDegrees(context: Context): Int {

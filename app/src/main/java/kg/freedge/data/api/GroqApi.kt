@@ -1,5 +1,6 @@
 package kg.freedge.data.api
 
+import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import retrofit2.http.Body
 import retrofit2.http.Header
@@ -22,7 +23,7 @@ data class GroqChatRequest(
 
 data class GroqMessage(
     val role: String,
-    val content: List<JsonObject>
+    val content: JsonElement
 )
 
 data class GroqChatResponse(
