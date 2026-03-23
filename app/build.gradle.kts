@@ -83,6 +83,7 @@ dependencies {
 
     // Navigation
     implementation(libs.androidx.navigation.compose)
+    implementation("com.github.jeziellago:compose-markdown:0.5.4")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

@@ -12,7 +12,8 @@ data class MainState(
     val isLoading: Boolean = false,
     val result: String? = null,
     val error: String? = null,
-    val imageBytes: ByteArray? = null
+    val imageBytes: ByteArray? = null,
+    val orientationDegrees: Int? = null
 )
 
 class MainViewModel : ViewModel() {
@@ -22,8 +23,11 @@ class MainViewModel : ViewModel() {
     private val _state = MutableStateFlow(MainState())
     val state: StateFlow<MainState> = _state
 
-    fun onImageCaptured(bytes: ByteArray) {
-        _state.value = _state.value.copy(imageBytes = bytes)
+    fun onImageCaptured(bytes: ByteArray, orientationDegrees: Int) {
+        _state.value = _state.value.copy(
+            imageBytes = bytes,
+            orientationDegrees = orientationDegrees
+        )
         analyzeImage(bytes)
     }
 

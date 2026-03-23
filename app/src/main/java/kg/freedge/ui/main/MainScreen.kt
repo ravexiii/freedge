@@ -1,7 +1,10 @@
 package kg.freedge.ui.main
 
 import android.Manifest
+import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Matrix
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
@@ -33,6 +36,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
+import dev.jeziellago.compose.markdowntext.MarkdownText
+import android.view.Surface
+import android.view.WindowManager
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.concurrent.Executors
 
@@ -55,10 +62,13 @@ fun MainScreen(
             !cameraPermission.status.isGranted -> {
                 PermissionRequest { cameraPermission.launchPermissionRequest() }
             }
-            state.result != null -> {
+            state.imageBytes != null -> {
                 ResultScreen(
-                    result = state.result!!,
-                    imageBytes = state.imageBytes,
+                    result = state.result,
+                    error = state.error,
+                    imageBytes = state.imageBytes!!,
+                    orientationDegrees = state.orientationDegrees,
+                    isLoading = state.isLoading,
                     onRetry = { viewModel.reset() }
                 )
             }
@@ -66,7 +76,7 @@ fun MainScreen(
                 CameraScreen(
                     isLoading = state.isLoading,
                     error = state.error,
-                    onImageCaptured = { viewModel.onImageCaptured(it) },
+                    onImageCaptured = { bytes, degrees -> viewModel.onImageCaptured(bytes, degrees) },
                     onCaptureError = { viewModel.onCaptureError(it) }
                 )
             }
@@ -109,7 +119,7 @@ fun PermissionRequest(onRequest: () -> Unit) {
 fun CameraScreen(
     isLoading: Boolean,
     error: String?,
-    onImageCaptured: (ByteArray) -> Unit,
+    onImageCaptured: (ByteArray, Int) -> Unit,
     onCaptureError: (String) -> Unit
 ) {
     val context = LocalContext.current
@@ -175,6 +185,7 @@ fun CameraScreen(
                 Button(
                     onClick = {
                         imageCapture?.let { capture ->
+                            val rotationDegrees = getRotationDegrees(context)
                             val photoFile =
                                 File(context.cacheDir, "capture_${System.currentTimeMillis()}.jpg")
                             val outputOptions =
@@ -187,9 +198,10 @@ fun CameraScreen(
                                         output: ImageCapture.OutputFileResults
                                     ) {
                                         val bytes = photoFile.readBytes()
+                                        val rotatedBytes = rotateJpegBytes(bytes, rotationDegrees)
                                         photoFile.delete()
                                         ContextCompat.getMainExecutor(context).execute {
-                                            onImageCaptured(bytes)
+                                            onImageCaptured(rotatedBytes, rotationDegrees)
                                         }
                                     }
 
@@ -234,8 +246,11 @@ fun CameraScreen(
 
 @Composable
 fun ResultScreen(
-    result: String,
+    result: String?,
+    error: String?,
     imageBytes: ByteArray?,
+    orientationDegrees: Int?,
+    isLoading: Boolean,
     onRetry: () -> Unit
 ) {
     Column(
@@ -245,7 +260,8 @@ fun ResultScreen(
             .padding(16.dp)
     ) {
         // Фото
-        imageBytes?.let { bytes ->
+        val bytes = imageBytes
+        if (bytes != null) {
             val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
             Image(
                 bitmap = bitmap.asImageBitmap(),
@@ -258,17 +274,49 @@ fun ResultScreen(
             Spacer(modifier = Modifier.height(16.dp))
         }
 
-        // Результат
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
-        ) {
+        orientationDegrees?.let { degrees ->
             Text(
-                text = result,
-                modifier = Modifier.padding(16.dp),
-                fontSize = 16.sp,
-                lineHeight = 24.sp
+                text = "Ориентация: ${degrees}°",
+                color = Color.Gray,
+                modifier = Modifier.padding(bottom = 16.dp)
             )
+        }
+
+        when {
+            error != null -> {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFCDD2))
+                ) {
+                    Text(
+                        text = error,
+                        modifier = Modifier.padding(16.dp),
+                        color = Color(0xFFB71C1C)
+                    )
+                }
+            }
+            result != null -> {
+                // Результат
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    MarkdownText(
+                        markdown = result,
+                        modifier = Modifier.padding(16.dp),
+                        style = LocalTextStyle.current.copy(
+                            fontSize = 16.sp,
+                            lineHeight = 24.sp
+                        )
+                    )
+                }
+            }
+            else -> {
+                CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -281,4 +329,31 @@ fun ResultScreen(
             Text("Сфоткать ещё")
         }
     }
+}
+
+private fun getRotationDegrees(context: Context): Int {
+    val rotation = (context.getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay.rotation
+    return when (rotation) {
+        Surface.ROTATION_0 -> 0
+        Surface.ROTATION_90 -> 90
+        Surface.ROTATION_180 -> 180
+        Surface.ROTATION_270 -> 270
+        else -> 0
+    }
+}
+
+private fun rotateJpegBytes(jpegBytes: ByteArray, degrees: Int): ByteArray {
+    if (degrees % 360 == 0) return jpegBytes
+
+    val bitmap = BitmapFactory.decodeByteArray(jpegBytes, 0, jpegBytes.size) ?: return jpegBytes
+    val rotated = rotateBitmap(bitmap, degrees.toFloat())
+
+    val stream = ByteArrayOutputStream()
+    rotated.compress(Bitmap.CompressFormat.JPEG, 80, stream)
+    return stream.toByteArray()
+}
+
+private fun rotateBitmap(bitmap: Bitmap, degrees: Float): Bitmap {
+    val matrix = Matrix().apply { postRotate(degrees) }
+    return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
 }
