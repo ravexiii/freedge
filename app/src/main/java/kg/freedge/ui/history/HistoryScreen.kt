@@ -9,13 +9,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -36,7 +37,7 @@ fun HistoryScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("История сканов") },
+                title = { Text("История") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -44,7 +45,10 @@ fun HistoryScreen(
                             contentDescription = "Назад"
                         )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
             )
         }
     ) { padding ->
@@ -55,19 +59,26 @@ fun HistoryScreen(
                     .padding(padding),
                 contentAlignment = Alignment.Center
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     Text("📷", fontSize = 48.sp)
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text("Нет сохранённых сканов", fontSize = 16.sp)
+                    Text(
+                        "Нет сохранённых сканов",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         } else {
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                    .padding(padding)
+                    .navigationBarsPadding(),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 items(scans, key = { it.id }) { scan ->
                     ScanCard(
@@ -94,7 +105,7 @@ private fun ScanCard(
         BitmapFactory.decodeByteArray(scan.imageBytes, 0, scan.imageBytes.size)
     }
     val dateStr = remember(scan.createdAt) {
-        SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault())
+        SimpleDateFormat("d MMM, HH:mm", Locale.getDefault())
             .format(Date(scan.createdAt))
     }
 
@@ -102,7 +113,10 @@ private fun ScanCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        )
     ) {
         Row(
             modifier = Modifier.padding(12.dp),
@@ -112,30 +126,32 @@ private fun ScanCard(
                 Image(
                     bitmap = it.asImageBitmap(),
                     contentDescription = null,
+                    contentScale = ContentScale.Crop,
                     modifier = Modifier
-                        .size(72.dp)
-                        .clip(RoundedCornerShape(8.dp))
+                        .size(64.dp)
+                        .clip(RoundedCornerShape(10.dp))
                 )
             }
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = dateStr,
-                    fontSize = 12.sp,
+                    style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = scan.result,
-                    maxLines = 3,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
-                    fontSize = 14.sp
+                    style = MaterialTheme.typography.bodyMedium
                 )
             }
             IconButton(onClick = onDelete) {
                 Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = "Удалить"
+                    imageVector = Icons.Outlined.Delete,
+                    contentDescription = "Удалить",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }

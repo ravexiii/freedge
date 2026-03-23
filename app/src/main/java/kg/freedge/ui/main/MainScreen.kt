@@ -13,12 +13,16 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -27,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -70,7 +75,6 @@ fun MainScreen(
                     result = state.result,
                     error = state.error,
                     imageBytes = state.imageBytes!!,
-                    orientationDegrees = state.orientationDegrees,
                     isLoading = state.isLoading,
                     onRetry = { viewModel.reset() }
                 )
@@ -93,14 +97,12 @@ fun PermissionRequest(onRequest: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .safeDrawingPadding()
             .padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(
-            text = "📷",
-            fontSize = 64.sp
-        )
+        Text(text = "📷", fontSize = 64.sp)
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = "Нужен доступ к камере",
@@ -110,12 +112,10 @@ fun PermissionRequest(onRequest: () -> Unit) {
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = "Чтобы сфоткать холодильник",
-            color = Color.Gray
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.height(24.dp))
-        Button(onClick = onRequest) {
-            Text("Разрешить")
-        }
+        Button(onClick = onRequest) { Text("Разрешить") }
     }
 }
 
@@ -136,6 +136,7 @@ fun CameraScreen(
     val mainExecutor = remember(context) { ContextCompat.getMainExecutor(context) }
 
     Box(modifier = Modifier.fillMaxSize()) {
+        // Превью камеры — полноэкранный
         AndroidView(
             factory = { ctx ->
                 PreviewView(ctx).apply {
@@ -143,7 +144,6 @@ fun CameraScreen(
                     val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
                     cameraProviderFuture.addListener({
                         val cameraProvider = cameraProviderFuture.get()
-                        // Следующий кадр message queue: не склеиваем тяжёлый bindToLifecycle с первым layout (Davey)
                         post {
                             if (!isAttachedToWindow) return@post
                             val preview = Preview.Builder().build().also {
@@ -173,41 +173,50 @@ fun CameraScreen(
             }
         )
 
-        // Кнопка истории — верхний правый угол
-        IconButton(
-            onClick = onNavigateToHistory,
+        // Кнопка истории — верхний правый угол, с учётом status bar
+        Box(
             modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(12.dp)
-                .background(Color.Black.copy(alpha = 0.4f), CircleShape)
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .padding(horizontal = 12.dp, vertical = 8.dp),
         ) {
-            Icon(
-                imageVector = Icons.Default.DateRange,
-                contentDescription = "История",
-                tint = Color.White
-            )
+            IconButton(
+                onClick = onNavigateToHistory,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .background(Color.Black.copy(alpha = 0.35f), CircleShape)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.DateRange,
+                    contentDescription = "История",
+                    tint = Color.White
+                )
+            }
         }
 
-        // Кнопка снимка
+        // Кнопка снимка — внизу с учётом navigation bar
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = 48.dp),
+                .navigationBarsPadding()
+                .padding(bottom = 40.dp),
             contentAlignment = Alignment.BottomCenter
         ) {
             if (isLoading) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(72.dp),
                     color = Color.White,
-                    strokeWidth = 4.dp
+                    strokeWidth = 3.dp
                 )
             } else {
-                Button(
+                ShutterButton(
                     onClick = {
                         imageCapture?.let { capture ->
                             val rotationDegrees = getRotationDegrees(context)
-                            val photoFile =
-                                File(context.cacheDir, "capture_${System.currentTimeMillis()}.jpg")
+                            val photoFile = File(
+                                context.cacheDir,
+                                "capture_${System.currentTimeMillis()}.jpg"
+                            )
                             val outputOptions =
                                 ImageCapture.OutputFileOptions.Builder(photoFile).build()
                             capture.takePicture(
@@ -236,13 +245,8 @@ fun CameraScreen(
                                 }
                             )
                         }
-                    },
-                    modifier = Modifier.size(72.dp),
-                    shape = CircleShape,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.White)
-                ) {
-                    Text("📸", fontSize = 28.sp)
-                }
+                    }
+                )
             }
         }
 
@@ -251,13 +255,16 @@ fun CameraScreen(
             Card(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFCDD2))
+                    .statusBarsPadding()
+                    .padding(top = 56.dp, start = 16.dp, end = 16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer
+                )
             ) {
                 Text(
                     text = it,
                     modifier = Modifier.padding(16.dp),
-                    color = Color(0xFFB71C1C)
+                    color = MaterialTheme.colorScheme.onErrorContainer
                 )
             }
         }
@@ -265,11 +272,27 @@ fun CameraScreen(
 }
 
 @Composable
+private fun ShutterButton(onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(72.dp)
+            .border(3.dp, Color.White, CircleShape)
+            .padding(6.dp)
+            .clip(CircleShape)
+            .background(Color.White, CircleShape)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = ripple(bounded = true, color = Color.Gray),
+                onClick = onClick
+            )
+    )
+}
+
+@Composable
 fun ResultScreen(
     result: String?,
     error: String?,
     imageBytes: ByteArray?,
-    orientationDegrees: Int?,
     isLoading: Boolean,
     onRetry: () -> Unit,
     retryLabel: String = "Сфоткать ещё"
@@ -277,83 +300,101 @@ fun ResultScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp)
+            .safeDrawingPadding()
     ) {
-        // Фото
-        val bytes = imageBytes
-        if (bytes != null) {
-            val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-            Image(
-                bitmap = bitmap.asImageBitmap(),
-                contentDescription = null,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-                    .clip(RoundedCornerShape(12.dp))
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-        }
-
-        orientationDegrees?.let { degrees ->
-            Text(
-                text = "Ориентация: ${degrees}°",
-                color = Color.Gray,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-        }
-
-        when {
-            error != null -> {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFCDD2))
-                ) {
-                    Text(
-                        text = error,
-                        modifier = Modifier.padding(16.dp),
-                        color = Color(0xFFB71C1C)
-                    )
-                }
-            }
-            result != null -> {
-                // Результат
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    MarkdownText(
-                        markdown = result,
-                        modifier = Modifier.padding(16.dp),
-                        style = LocalTextStyle.current.copy(
-                            fontSize = 16.sp,
-                            lineHeight = 24.sp
-                        )
-                    )
-                }
-            }
-            else -> {
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
+        // Скролируемое содержимое
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp)
+                .padding(top = 16.dp, bottom = 8.dp)
+        ) {
+            // Фото
+            imageBytes?.let { bytes ->
+                val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                Image(
+                    bitmap = bitmap.asImageBitmap(),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(220.dp)
+                        .clip(RoundedCornerShape(16.dp))
                 )
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            when {
+                error != null -> {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        )
+                    ) {
+                        Text(
+                            text = error,
+                            modifier = Modifier.padding(16.dp),
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
+                }
+                isLoading -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+                result != null -> {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                        )
+                    ) {
+                        MarkdownText(
+                            markdown = result,
+                            modifier = Modifier.padding(16.dp),
+                            style = LocalTextStyle.current.copy(
+                                fontSize = 16.sp,
+                                lineHeight = 24.sp
+                            )
+                        )
+                    }
+                }
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Кнопка
+        // Кнопка — фиксированная внизу, не уезжает при скролле
         Button(
             onClick = onRetry,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
+            if (retryLabel == "Назад") {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+            }
             Text(retryLabel)
         }
     }
 }
 
 private fun getRotationDegrees(context: Context): Int {
-    val rotation = (context.getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay.rotation
+    val rotation =
+        (context.getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay.rotation
     return when (rotation) {
         Surface.ROTATION_0 -> 0
         Surface.ROTATION_90 -> 90
@@ -365,10 +406,9 @@ private fun getRotationDegrees(context: Context): Int {
 
 private fun rotateJpegBytes(jpegBytes: ByteArray, degrees: Int): ByteArray {
     if (degrees % 360 == 0) return jpegBytes
-
-    val bitmap = BitmapFactory.decodeByteArray(jpegBytes, 0, jpegBytes.size) ?: return jpegBytes
+    val bitmap =
+        BitmapFactory.decodeByteArray(jpegBytes, 0, jpegBytes.size) ?: return jpegBytes
     val rotated = rotateBitmap(bitmap, degrees.toFloat())
-
     val stream = ByteArrayOutputStream()
     rotated.compress(Bitmap.CompressFormat.JPEG, 80, stream)
     return stream.toByteArray()

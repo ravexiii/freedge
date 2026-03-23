@@ -42,7 +42,6 @@ fun ScanDetailScreen(
                 result = scan!!.result,
                 error = null,
                 imageBytes = scan!!.imageBytes,
-                orientationDegrees = null,
                 isLoading = false,
                 onRetry = onBack,
                 retryLabel = "Назад"

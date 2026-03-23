@@ -1,5 +1,8 @@
 package kg.freedge.ui.onboarding
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
@@ -37,11 +40,13 @@ fun OnboardingScreen(
     viewModel: OnboardingViewModel = viewModel()
 ) {
     val pagerState = rememberPagerState(pageCount = { pages.size })
+    val isLastPage = pagerState.currentPage == pages.lastIndex
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .safeDrawingPadding()
+            .padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.weight(1f))
@@ -55,14 +60,15 @@ fun OnboardingScreen(
 
         // Индикаторы страниц
         Row(
-            modifier = Modifier.padding(vertical = 24.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.padding(vertical = 28.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             repeat(pages.size) { index ->
                 val isSelected = pagerState.currentPage == index
                 Box(
                     modifier = Modifier
-                        .size(if (isSelected) 10.dp else 8.dp)
+                        .size(if (isSelected) 10.dp else 7.dp)
                         .clip(CircleShape)
                         .background(
                             if (isSelected) MaterialTheme.colorScheme.primary
@@ -72,15 +78,26 @@ fun OnboardingScreen(
             }
         }
 
-        // Кнопка "Начать" — видна только на последней странице
-        if (pagerState.currentPage == pages.lastIndex) {
-            Button(
-                onClick = { viewModel.completeOnboarding(onComplete) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp)
+        // Кнопка всегда занимает место — нет прыжка layout
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp)
+                .padding(bottom = 0.dp)
+        ) {
+            this@Column.AnimatedVisibility(
+                visible = isLastPage,
+                enter = fadeIn(),
+                exit = fadeOut()
             ) {
-                Text("Начать", fontSize = 18.sp)
+                Button(
+                    onClick = { viewModel.completeOnboarding(onComplete) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp)
+                ) {
+                    Text("Начать", fontSize = 17.sp)
+                }
             }
         }
 
@@ -93,14 +110,11 @@ private fun PageContent(page: OnboardingPage) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(
-            text = page.emoji,
-            fontSize = 80.sp
-        )
+        Text(text = page.emoji, fontSize = 80.sp)
         Spacer(modifier = Modifier.height(32.dp))
         Text(
             text = page.title,
@@ -108,12 +122,13 @@ private fun PageContent(page: OnboardingPage) {
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center
         )
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
         Text(
             text = page.subtitle,
             fontSize = 16.sp,
             textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            lineHeight = 22.sp
         )
     }
 }

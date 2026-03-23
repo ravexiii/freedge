@@ -17,7 +17,7 @@ data class GroqChatRequest(
     val model: String,
     val messages: List<GroqMessage>,
     val max_completion_tokens: Int = 1024,
-    val temperature: Double = 0.3
+    val temperature: Double = 0.7
 )
 
 data class GroqMessage(

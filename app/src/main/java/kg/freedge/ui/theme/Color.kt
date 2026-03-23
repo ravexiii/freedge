@@ -2,10 +2,12 @@ package kg.freedge.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+// Light theme
+val Green40 = Color(0xFF006E2C)
+val GreenGrey40 = Color(0xFF4A7C59)
+val Sage40 = Color(0xFF52796F)
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+// Dark theme
+val Green80 = Color(0xFF7BD87F)
+val GreenGrey80 = Color(0xFF9ECBAA)
+val Sage80 = Color(0xFF8DBDB4)
