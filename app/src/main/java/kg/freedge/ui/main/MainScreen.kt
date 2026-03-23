@@ -51,8 +51,7 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import dev.jeziellago.compose.markdowntext.MarkdownText
-import android.view.Surface
-import android.view.WindowManager
+
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.concurrent.Executors
@@ -219,7 +218,6 @@ fun CameraScreen(
                 ShutterButton(
                     onClick = {
                         imageCapture?.let { capture ->
-                            val rotationDegrees = getRotationDegrees(context)
                             val photoFile = File(
                                 context.cacheDir,
                                 "capture_${System.currentTimeMillis()}.jpg"
@@ -233,11 +231,22 @@ fun CameraScreen(
                                     override fun onImageSaved(
                                         output: ImageCapture.OutputFileResults
                                     ) {
+                                        val exif = android.media.ExifInterface(photoFile.absolutePath)
+                                        val orientation = exif.getAttributeInt(
+                                            android.media.ExifInterface.TAG_ORIENTATION,
+                                            android.media.ExifInterface.ORIENTATION_NORMAL
+                                        )
+                                        val degrees = when (orientation) {
+                                            android.media.ExifInterface.ORIENTATION_ROTATE_90 -> 90
+                                            android.media.ExifInterface.ORIENTATION_ROTATE_180 -> 180
+                                            android.media.ExifInterface.ORIENTATION_ROTATE_270 -> 270
+                                            else -> 0
+                                        }
                                         val bytes = photoFile.readBytes()
-                                        val rotatedBytes = rotateJpegBytes(bytes, rotationDegrees)
+                                        val rotatedBytes = rotateJpegBytes(bytes, degrees)
                                         photoFile.delete()
                                         ContextCompat.getMainExecutor(context).execute {
-                                            onImageCaptured(rotatedBytes, rotationDegrees)
+                                            onImageCaptured(rotatedBytes, degrees)
                                         }
                                     }
 
@@ -306,7 +315,9 @@ fun ResultScreen(
 ) {
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
+    var showFullscreen by remember { mutableStateOf(false) }
 
+    Box(modifier = Modifier.fillMaxSize()) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -331,6 +342,7 @@ fun ResultScreen(
                         .fillMaxWidth()
                         .height(220.dp)
                         .clip(RoundedCornerShape(16.dp))
+                        .clickable { showFullscreen = true }
                 )
                 Spacer(modifier = Modifier.height(16.dp))
             }
@@ -436,6 +448,30 @@ fun ResultScreen(
             Text(retryLabel)
         }
     }
+
+    // Фуллскрин просмотр фото
+    if (showFullscreen && imageBytes != null) {
+        val bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = { showFullscreen = false }
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                bitmap = bitmap.asImageBitmap(),
+                contentDescription = null,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+    }
+    } // Box
 }
 
 private fun shareRecipe(context: Context, text: String, imageBytes: ByteArray?) {
@@ -467,17 +503,6 @@ private fun shareRecipe(context: Context, text: String, imageBytes: ByteArray?) 
     context.startActivity(Intent.createChooser(sendIntent, "Поделиться рецептом"))
 }
 
-private fun getRotationDegrees(context: Context): Int {
-    val rotation =
-        (context.getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay.rotation
-    return when (rotation) {
-        Surface.ROTATION_0 -> 0
-        Surface.ROTATION_90 -> 90
-        Surface.ROTATION_180 -> 180
-        Surface.ROTATION_270 -> 270
-        else -> 0
-    }
-}
 
 private fun rotateJpegBytes(jpegBytes: ByteArray, degrees: Int): ByteArray {
     if (degrees % 360 == 0) return jpegBytes
