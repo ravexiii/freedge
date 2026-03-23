@@ -19,14 +19,17 @@ fun ScanDetailScreen(
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
-    val repository = remember { ScanRepository(FreedgeDatabase.getInstance(context)) }
+    val repository = remember { ScanRepository(FreedgeDatabase.getInstance(context), context) }
     var scan by remember { mutableStateOf<ScanEntity?>(null) }
+    var imageBytes by remember { mutableStateOf<ByteArray?>(null) }
     var loaded by remember { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
     LaunchedEffect(scanId) {
         scope.launch {
-            scan = repository.getScanById(scanId)
+            val entity = repository.getScanById(scanId)
+            scan = entity
+            imageBytes = entity?.let { repository.loadImage(it.imagePath) }
             loaded = true
         }
     }
@@ -41,7 +44,7 @@ fun ScanDetailScreen(
             ResultScreen(
                 result = scan!!.result,
                 error = null,
-                imageBytes = scan!!.imageBytes,
+                imageBytes = imageBytes,
                 isLoading = false,
                 onRetry = onBack,
                 retryLabel = "Назад"

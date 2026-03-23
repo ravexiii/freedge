@@ -23,7 +23,7 @@ data class MainState(
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = FridgeRepository()
-    private val scanRepository = ScanRepository(FreedgeDatabase.getInstance(application))
+    private val scanRepository = ScanRepository(FreedgeDatabase.getInstance(application), application)
     private val analytics = AnalyticsManager(application)
 
     private val _state = MutableStateFlow(MainState())

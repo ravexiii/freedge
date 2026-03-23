@@ -102,7 +102,7 @@ private fun ScanCard(
     onDelete: () -> Unit
 ) {
     val bitmap = remember(scan.id) {
-        BitmapFactory.decodeByteArray(scan.imageBytes, 0, scan.imageBytes.size)
+        BitmapFactory.decodeFile(scan.imagePath)
     }
     val dateStr = remember(scan.createdAt) {
         SimpleDateFormat("d MMM, HH:mm", Locale.getDefault())

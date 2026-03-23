@@ -14,7 +14,7 @@ import kotlinx.coroutines.launch
 
 class HistoryViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository = ScanRepository(FreedgeDatabase.getInstance(application))
+    private val repository = ScanRepository(FreedgeDatabase.getInstance(application), application)
     private val analytics = AnalyticsManager(application)
 
     val scans: StateFlow<List<ScanEntity>> = repository.getAllScans()
