@@ -18,6 +18,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -46,6 +48,7 @@ import java.util.concurrent.Executors
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun MainScreen(
+    onNavigateToHistory: () -> Unit = {},
     viewModel: MainViewModel = viewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -77,7 +80,8 @@ fun MainScreen(
                     isLoading = state.isLoading,
                     error = state.error,
                     onImageCaptured = { bytes, degrees -> viewModel.onImageCaptured(bytes, degrees) },
-                    onCaptureError = { viewModel.onCaptureError(it) }
+                    onCaptureError = { viewModel.onCaptureError(it) },
+                    onNavigateToHistory = onNavigateToHistory
                 )
             }
         }
@@ -120,7 +124,8 @@ fun CameraScreen(
     isLoading: Boolean,
     error: String?,
     onImageCaptured: (ByteArray, Int) -> Unit,
-    onCaptureError: (String) -> Unit
+    onCaptureError: (String) -> Unit,
+    onNavigateToHistory: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -167,6 +172,21 @@ fun CameraScreen(
                 imageCapture = null
             }
         )
+
+        // Кнопка истории — верхний правый угол
+        IconButton(
+            onClick = onNavigateToHistory,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(12.dp)
+                .background(Color.Black.copy(alpha = 0.4f), CircleShape)
+        ) {
+            Icon(
+                imageVector = Icons.Default.DateRange,
+                contentDescription = "История",
+                tint = Color.White
+            )
+        }
 
         // Кнопка снимка
         Box(
@@ -251,7 +271,8 @@ fun ResultScreen(
     imageBytes: ByteArray?,
     orientationDegrees: Int?,
     isLoading: Boolean,
-    onRetry: () -> Unit
+    onRetry: () -> Unit,
+    retryLabel: String = "Сфоткать ещё"
 ) {
     Column(
         modifier = Modifier
@@ -326,7 +347,7 @@ fun ResultScreen(
             onClick = onRetry,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Сфоткать ещё")
+            Text(retryLabel)
         }
     }
 }
