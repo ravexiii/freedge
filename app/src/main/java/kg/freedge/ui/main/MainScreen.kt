@@ -1,14 +1,10 @@
 package kg.freedge.ui.main
 
 import android.Manifest
-import android.content.Context
-import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.Matrix
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
-import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
@@ -37,7 +33,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
-import java.io.ByteArrayOutputStream
+import java.io.File
 import java.util.concurrent.Executors
 
 @OptIn(ExperimentalPermissionsApi::class)
@@ -70,7 +66,8 @@ fun MainScreen(
                 CameraScreen(
                     isLoading = state.isLoading,
                     error = state.error,
-                    onImageCaptured = { viewModel.onImageCaptured(it) }
+                    onImageCaptured = { viewModel.onImageCaptured(it) },
+                    onCaptureError = { viewModel.onCaptureError(it) }
                 )
             }
         }
@@ -112,43 +109,53 @@ fun PermissionRequest(onRequest: () -> Unit) {
 fun CameraScreen(
     isLoading: Boolean,
     error: String?,
-    onImageCaptured: (ByteArray) -> Unit
+    onImageCaptured: (ByteArray) -> Unit,
+    onCaptureError: (String) -> Unit
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
     var imageCapture by remember { mutableStateOf<ImageCapture?>(null) }
+    var cameraProviderRef by remember { mutableStateOf<ProcessCameraProvider?>(null) }
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
+    val mainExecutor = remember(context) { ContextCompat.getMainExecutor(context) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         AndroidView(
             factory = { ctx ->
                 PreviewView(ctx).apply {
+                    scaleType = PreviewView.ScaleType.FILL_CENTER
                     val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
                     cameraProviderFuture.addListener({
                         val cameraProvider = cameraProviderFuture.get()
-
-                        val preview = Preview.Builder().build().also {
-                            it.setSurfaceProvider(surfaceProvider)
+                        // Следующий кадр message queue: не склеиваем тяжёлый bindToLifecycle с первым layout (Davey)
+                        post {
+                            if (!isAttachedToWindow) return@post
+                            val preview = Preview.Builder().build().also {
+                                it.setSurfaceProvider(surfaceProvider)
+                            }
+                            val capture = ImageCapture.Builder()
+                                .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+                                .build()
+                            imageCapture = capture
+                            cameraProviderRef = cameraProvider
+                            cameraProvider.unbindAll()
+                            cameraProvider.bindToLifecycle(
+                                lifecycleOwner,
+                                CameraSelector.DEFAULT_BACK_CAMERA,
+                                preview,
+                                capture
+                            )
                         }
-
-                        imageCapture = ImageCapture.Builder()
-                            .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
-                            .build()
-
-                        val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-
-                        cameraProvider.unbindAll()
-                        cameraProvider.bindToLifecycle(
-                            lifecycleOwner,
-                            cameraSelector,
-                            preview,
-                            imageCapture
-                        )
-                    }, ContextCompat.getMainExecutor(ctx))
+                    }, mainExecutor)
                 }
             },
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
+            onRelease = {
+                cameraProviderRef?.unbindAll()
+                cameraProviderRef = null
+                imageCapture = null
+            }
         )
 
         // Кнопка снимка
@@ -168,17 +175,31 @@ fun CameraScreen(
                 Button(
                     onClick = {
                         imageCapture?.let { capture ->
+                            val photoFile =
+                                File(context.cacheDir, "capture_${System.currentTimeMillis()}.jpg")
+                            val outputOptions =
+                                ImageCapture.OutputFileOptions.Builder(photoFile).build()
                             capture.takePicture(
+                                outputOptions,
                                 cameraExecutor,
-                                object : ImageCapture.OnImageCapturedCallback() {
-                                    override fun onCaptureSuccess(image: ImageProxy) {
-                                        val bytes = imageProxyToBytes(image)
-                                        image.close()
-                                        onImageCaptured(bytes)
+                                object : ImageCapture.OnImageSavedCallback {
+                                    override fun onImageSaved(
+                                        output: ImageCapture.OutputFileResults
+                                    ) {
+                                        val bytes = photoFile.readBytes()
+                                        photoFile.delete()
+                                        ContextCompat.getMainExecutor(context).execute {
+                                            onImageCaptured(bytes)
+                                        }
                                     }
 
                                     override fun onError(exception: ImageCaptureException) {
-                                        // Handle error
+                                        photoFile.delete()
+                                        ContextCompat.getMainExecutor(context).execute {
+                                            onCaptureError(
+                                                exception.message ?: "Не удалось сохранить снимок"
+                                            )
+                                        }
                                     }
                                 }
                             )
@@ -260,22 +281,4 @@ fun ResultScreen(
             Text("Сфоткать ещё")
         }
     }
-}
-
-private fun imageProxyToBytes(image: ImageProxy): ByteArray {
-    val buffer = image.planes[0].buffer
-    val bytes = ByteArray(buffer.remaining())
-    buffer.get(bytes)
-
-    val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-    val rotated = rotateBitmap(bitmap, image.imageInfo.rotationDegrees.toFloat())
-
-    val stream = ByteArrayOutputStream()
-    rotated.compress(Bitmap.CompressFormat.JPEG, 80, stream)
-    return stream.toByteArray()
-}
-
-private fun rotateBitmap(bitmap: Bitmap, degrees: Float): Bitmap {
-    val matrix = Matrix().apply { postRotate(degrees) }
-    return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
 }

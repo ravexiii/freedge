@@ -18,7 +18,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             FreedgeTheme {
                 Surface(
-                    modifier = Modifier.Companion.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
                     MainScreen()

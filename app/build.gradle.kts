@@ -1,7 +1,14 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+}
+
+val localProperties = Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
 }
 
 android {
@@ -22,6 +29,10 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Ключ задаётся в local.properties: GROQ_API_KEY=... (файл в .gitignore)
+        val groqKey = localProperties.getProperty("GROQ_API_KEY").orEmpty()
+        buildConfigField("String", "GROQ_API_KEY", "\"${groqKey.replace("\"", "\\\"")}\"")
     }
 
     buildTypes {

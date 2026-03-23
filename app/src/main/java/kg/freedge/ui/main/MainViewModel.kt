@@ -2,6 +2,7 @@ package kg.freedge.ui.main
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kg.freedge.BuildConfig
 import kg.freedge.data.repo.FridgeRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,9 +22,6 @@ class MainViewModel : ViewModel() {
     private val _state = MutableStateFlow(MainState())
     val state: StateFlow<MainState> = _state
 
-    // TODO: Replace with your API key
-    private val apiKey = "AIzaSyAHly6CDB0IXBu4jKUXe941KcbL_gIgrwk"
-
     fun onImageCaptured(bytes: ByteArray) {
         _state.value = _state.value.copy(imageBytes = bytes)
         analyzeImage(bytes)
@@ -31,6 +29,15 @@ class MainViewModel : ViewModel() {
 
     private fun analyzeImage(bytes: ByteArray) {
         viewModelScope.launch {
+            val apiKey = BuildConfig.GROQ_API_KEY
+            if (apiKey.isBlank()) {
+                _state.value = _state.value.copy(
+                    isLoading = false,
+                    error = "Добавьте GROQ_API_KEY в local.properties в корне проекта"
+                )
+                return@launch
+            }
+
             _state.value = _state.value.copy(isLoading = true, error = null)
 
             repository.analyzeImage(bytes, apiKey)
@@ -51,5 +58,9 @@ class MainViewModel : ViewModel() {
 
     fun reset() {
         _state.value = MainState()
+    }
+
+    fun onCaptureError(message: String) {
+        _state.value = _state.value.copy(isLoading = false, error = message)
     }
 }
