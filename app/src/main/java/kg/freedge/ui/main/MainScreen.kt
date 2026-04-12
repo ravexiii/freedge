@@ -6,6 +6,8 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
+import android.view.Surface
+import android.view.WindowManager
 import android.widget.Toast
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
@@ -13,6 +15,8 @@ import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -38,8 +42,11 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -51,8 +58,8 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import dev.jeziellago.compose.markdowntext.MarkdownText
-import android.view.Surface
-import android.view.WindowManager
+import kg.freedge.R
+import kg.freedge.utils.HapticUtils
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.concurrent.Executors
@@ -65,6 +72,7 @@ fun MainScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val cameraPermission = rememberPermissionState(Manifest.permission.CAMERA)
+    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         if (!cameraPermission.status.isGranted) {
@@ -72,29 +80,52 @@ fun MainScreen(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        when {
-            !cameraPermission.status.isGranted -> {
-                PermissionRequest { cameraPermission.launchPermissionRequest() }
+    // Haptic on scan success
+    val prevResult = remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(state.result) {
+        if (state.result != null && prevResult.value == null) {
+            HapticUtils.performSuccess(context)
+        }
+        prevResult.value = state.result
+    }
+
+    val screenKey = when {
+        !cameraPermission.status.isGranted -> "permission"
+        state.imageBytes != null -> "result"
+        else -> "camera"
+    }
+
+    AnimatedContent(
+        targetState = screenKey,
+        transitionSpec = {
+            if (targetState == "result") {
+                (fadeIn(tween(350)) + slideInVertically(tween(350)) { it / 4 }) togetherWith
+                    fadeOut(tween(200))
+            } else {
+                fadeIn(tween(300)) togetherWith
+                    (fadeOut(tween(250)) + slideOutVertically(tween(350)) { it / 4 })
             }
-            state.imageBytes != null -> {
-                ResultScreen(
-                    result = state.result,
-                    error = state.error,
-                    imageBytes = state.imageBytes!!,
-                    isLoading = state.isLoading,
-                    onRetry = { viewModel.reset() }
-                )
-            }
-            else -> {
-                CameraScreen(
-                    isLoading = state.isLoading,
-                    error = state.error,
-                    onImageCaptured = { bytes, degrees -> viewModel.onImageCaptured(bytes, degrees) },
-                    onCaptureError = { viewModel.onCaptureError(it) },
-                    onNavigateToHistory = onNavigateToHistory
-                )
-            }
+        },
+        modifier = Modifier.fillMaxSize(),
+        label = "screen"
+    ) { screen ->
+        when (screen) {
+            "permission" -> PermissionRequest { cameraPermission.launchPermissionRequest() }
+            "result" -> ResultScreen(
+                result = state.result,
+                error = state.error,
+                imageBytes = state.imageBytes,
+                isLoading = state.isLoading,
+                onRetry = { viewModel.reset() }
+            )
+            else -> CameraScreen(
+                isLoading = state.isLoading,
+                error = state.error,
+                onImageCaptured = { bytes, degrees -> viewModel.onImageCaptured(bytes, degrees) },
+                onCaptureError = { viewModel.onCaptureError(it) },
+                onClearError = { viewModel.clearError() },
+                onNavigateToHistory = onNavigateToHistory
+            )
         }
     }
 }
@@ -112,17 +143,17 @@ fun PermissionRequest(onRequest: () -> Unit) {
         Text(text = "📷", fontSize = 64.sp)
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "Нужен доступ к камере",
+            text = stringResource(R.string.camera_permission_title),
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Чтобы сфоткать холодильник",
+            text = stringResource(R.string.camera_permission_desc),
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.height(24.dp))
-        Button(onClick = onRequest) { Text("Разрешить") }
+        Button(onClick = onRequest) { Text(stringResource(R.string.permission_allow)) }
     }
 }
 
@@ -132,10 +163,19 @@ fun CameraScreen(
     error: String?,
     onImageCaptured: (ByteArray, Int) -> Unit,
     onCaptureError: (String) -> Unit,
+    onClearError: () -> Unit = {},
     onNavigateToHistory: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val view = LocalView.current
+    val errorGeneric = stringResource(R.string.error_generic)
+    val retryLabel = stringResource(R.string.retry)
+
+    // Haptic on camera error
+    LaunchedEffect(error) {
+        if (error != null) HapticUtils.performError(context)
+    }
 
     var imageCapture by remember { mutableStateOf<ImageCapture?>(null) }
     var cameraProviderRef by remember { mutableStateOf<ProcessCameraProvider?>(null) }
@@ -143,7 +183,7 @@ fun CameraScreen(
     val mainExecutor = remember(context) { ContextCompat.getMainExecutor(context) }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // Превью камеры — полноэкранный
+        // Camera preview — full screen
         AndroidView(
             factory = { ctx ->
                 PreviewView(ctx).apply {
@@ -180,7 +220,7 @@ fun CameraScreen(
             }
         )
 
-        // Кнопка истории — верхний правый угол, с учётом status bar
+        // History button — top right
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -195,29 +235,24 @@ fun CameraScreen(
             ) {
                 Icon(
                     imageVector = Icons.Default.DateRange,
-                    contentDescription = "История",
+                    contentDescription = stringResource(R.string.history_title),
                     tint = Color.White
                 )
             }
         }
 
-        // Кнопка снимка — внизу с учётом navigation bar
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .navigationBarsPadding()
-                .padding(bottom = 40.dp),
-            contentAlignment = Alignment.BottomCenter
-        ) {
-            if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(72.dp),
-                    color = Color.White,
-                    strokeWidth = 3.dp
-                )
-            } else {
+        // Shutter button — bottom (hidden while loading)
+        if (!isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .navigationBarsPadding()
+                    .padding(bottom = 40.dp),
+                contentAlignment = Alignment.BottomCenter
+            ) {
                 ShutterButton(
                     onClick = {
+                        HapticUtils.performClick(view)
                         imageCapture?.let { capture ->
                             val rotationDegrees = getRotationDegrees(context)
                             val photoFile = File(
@@ -244,9 +279,7 @@ fun CameraScreen(
                                     override fun onError(exception: ImageCaptureException) {
                                         photoFile.delete()
                                         ContextCompat.getMainExecutor(context).execute {
-                                            onCaptureError(
-                                                exception.message ?: "Не удалось сохранить снимок"
-                                            )
+                                            onCaptureError(exception.message ?: errorGeneric)
                                         }
                                     }
                                 }
@@ -257,22 +290,45 @@ fun CameraScreen(
             }
         }
 
-        // Ошибка
-        error?.let {
+        // Full-screen loading overlay
+        if (isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.7f)),
+                contentAlignment = Alignment.Center
+            ) {
+                LoadingAnimation()
+            }
+        }
+
+        // Error card with retry
+        error?.let { errorMessage ->
             Card(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .statusBarsPadding()
                     .padding(top = 56.dp, start = 16.dp, end = 16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer
-                )
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFCDD2)),
+                shape = RoundedCornerShape(12.dp)
             ) {
-                Text(
-                    text = it,
+                Column(
                     modifier = Modifier.padding(16.dp),
-                    color = MaterialTheme.colorScheme.onErrorContainer
-                )
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = errorMessage,
+                        color = Color(0xFFB71C1C),
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Button(
+                        onClick = onClearError,
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB71C1C))
+                    ) {
+                        Text(retryLabel, color = Color.White)
+                    }
+                }
             }
         }
     }
@@ -302,17 +358,20 @@ fun ResultScreen(
     imageBytes: ByteArray?,
     isLoading: Boolean,
     onRetry: () -> Unit,
-    retryLabel: String = "Сфоткать ещё"
+    showBackArrow: Boolean = false,
+    retryLabel: String = stringResource(R.string.take_another)
 ) {
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
+    val copiedMsg = stringResource(R.string.copied)
+    val shareFooter = stringResource(R.string.share_footer)
+    val shareChooserTitle = stringResource(R.string.share_chooser_title)
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .safeDrawingPadding()
     ) {
-        // Скролируемое содержимое
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -320,7 +379,6 @@ fun ResultScreen(
                 .padding(horizontal = 16.dp)
                 .padding(top = 16.dp, bottom = 8.dp)
         ) {
-            // Фото
             imageBytes?.let { bytes ->
                 val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
                 Image(
@@ -388,7 +446,7 @@ fun ResultScreen(
                         OutlinedButton(
                             onClick = {
                                 clipboardManager.setText(AnnotatedString(result))
-                                Toast.makeText(context, "Скопировано", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, copiedMsg, Toast.LENGTH_SHORT).show()
                             },
                             modifier = Modifier.weight(1f)
                         ) {
@@ -398,11 +456,11 @@ fun ResultScreen(
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(Modifier.width(6.dp))
-                            Text("Скопировать")
+                            Text(stringResource(R.string.copy))
                         }
 
                         Button(
-                            onClick = { shareRecipe(context, result, imageBytes) },
+                            onClick = { shareRecipe(context, result, imageBytes, shareFooter, shareChooserTitle) },
                             modifier = Modifier.weight(1f)
                         ) {
                             Icon(
@@ -411,21 +469,20 @@ fun ResultScreen(
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(Modifier.width(6.dp))
-                            Text("Поделиться")
+                            Text(stringResource(R.string.share))
                         }
                     }
                 }
             }
         }
 
-        // Кнопка — фиксированная внизу, не уезжает при скролле
         OutlinedButton(
             onClick = onRetry,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
-            if (retryLabel == "Назад") {
+            if (showBackArrow) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = null,
@@ -438,8 +495,14 @@ fun ResultScreen(
     }
 }
 
-private fun shareRecipe(context: Context, text: String, imageBytes: ByteArray?) {
-    val shareText = "$text\n\n—\nСгенерировано в Freedge"
+private fun shareRecipe(
+    context: Context,
+    text: String,
+    imageBytes: ByteArray?,
+    footer: String,
+    chooserTitle: String
+) {
+    val shareText = "$text$footer"
 
     val sendIntent = Intent().apply {
         action = Intent.ACTION_SEND
@@ -460,11 +523,11 @@ private fun shareRecipe(context: Context, text: String, imageBytes: ByteArray?) 
             sendIntent.type = "image/jpeg"
             sendIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         } catch (_: Exception) {
-            // шарим только текст
+            // share text only
         }
     }
 
-    context.startActivity(Intent.createChooser(sendIntent, "Поделиться рецептом"))
+    context.startActivity(Intent.createChooser(sendIntent, chooserTitle))
 }
 
 private fun getRotationDegrees(context: Context): Int {

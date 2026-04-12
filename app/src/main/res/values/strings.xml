@@ -1,3 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Freedge</string>
+
+    <!-- Permissions -->
+    <string name="camera_permission_title">Нужен доступ к камере</string>
+    <string name="camera_permission_desc">Чтобы сфоткать холодильник</string>
+    <string name="permission_allow">Разрешить</string>
+
+    <!-- Camera -->
+    <string name="take_another">Сфоткать ещё</string>
+
+    <!-- Loading -->
+    <string name="loading_text">Готовлю рецепты</string>
+
+    <!-- Results -->
+    <string name="copy">Скопировать</string>
+    <string name="share">Поделиться</string>
+    <string name="copied">Скопировано</string>
+    <string name="back">Назад</string>
+    <string name="share_footer">\n\n—\nСгенерировано в Freedge 🍳</string>
+    <string name="share_chooser_title">Поделиться рецептом</string>
+
+    <!-- Errors -->
+    <string name="error_no_internet">Нет интернета. Проверьте подключение.</string>
+    <string name="error_generic">Что-то пошло не так</string>
+    <string name="retry">Попробовать снова</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_1_title">Сфоткай холодильник</string>
+    <string name="onboarding_1_subtitle">Открой холодильник, наведи камеру и сделай снимок</string>
+    <string name="onboarding_2_title">Получи рецепты из того что есть</string>
+    <string name="onboarding_2_subtitle">ИИ распознает продукты и предложит простые рецепты</string>
+    <string name="onboarding_start">Начать</string>
+
+    <!-- History -->
+    <string name="history_title">История</string>
+    <string name="history_empty">Пока нет сканов</string>
 </resources>

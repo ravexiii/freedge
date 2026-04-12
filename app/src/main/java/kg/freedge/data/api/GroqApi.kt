@@ -7,7 +7,7 @@ import retrofit2.http.Header
 import retrofit2.http.POST
 
 interface GroqApi {
-    @POST("v1/chat/completions")
+    @POST("openai/v1/chat/completions")
     suspend fun chatCompletions(
         @Header("Authorization") authorization: String,
         @Body request: GroqChatRequest

@@ -1,9 +1,12 @@
 package kg.freedge.ui.main
 
 import android.app.Application
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kg.freedge.BuildConfig
+import kg.freedge.R
 import kg.freedge.analytics.AnalyticsManager
 import kg.freedge.data.db.FreedgeDatabase
 import kg.freedge.data.repo.FridgeRepository
@@ -40,6 +43,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun analyzeImage(bytes: ByteArray) {
         viewModelScope.launch {
+            if (!isNetworkAvailable()) {
+                _state.value = _state.value.copy(
+                    isLoading = false,
+                    error = getApplication<Application>().getString(R.string.error_no_internet)
+                )
+                analytics.logScanError("no_network")
+                return@launch
+            }
+
             val apiKey = BuildConfig.GROQ_API_KEY
             if (apiKey.isBlank()) {
                 analytics.logScanError("missing_api_key")
@@ -62,7 +74,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     analytics.logScanError(e.javaClass.simpleName)
                     _state.value = _state.value.copy(
                         isLoading = false,
-                        error = e.message ?: "Ошибка"
+                        error = e.message
+                            ?: getApplication<Application>().getString(R.string.error_generic)
                     )
                 }
         }
@@ -74,6 +87,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun clearError() {
+        _state.value = _state.value.copy(error = null)
+    }
+
     fun reset() {
         _state.value = MainState()
     }
@@ -81,5 +98,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun onCaptureError(message: String) {
         analytics.logScanError("capture_error")
         _state.value = _state.value.copy(isLoading = false, error = message)
+    }
+
+    private fun isNetworkAvailable(): Boolean {
+        val cm = getApplication<Application>()
+            .getSystemService(ConnectivityManager::class.java) ?: return false
+        val network = cm.activeNetwork ?: return false
+        val capabilities = cm.getNetworkCapabilities(network) ?: return false
+        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
     }
 }

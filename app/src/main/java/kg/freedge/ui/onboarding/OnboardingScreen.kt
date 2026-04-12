@@ -13,32 +13,34 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kg.freedge.R
 
 private data class OnboardingPage(val emoji: String, val title: String, val subtitle: String)
-
-private val pages = listOf(
-    OnboardingPage(
-        emoji = "📷",
-        title = "Сфоткай холодильник",
-        subtitle = "Открой холодильник, наведи камеру и сделай снимок"
-    ),
-    OnboardingPage(
-        emoji = "🍳",
-        title = "Получи рецепты из того что есть",
-        subtitle = "ИИ распознает продукты и предложит простые рецепты"
-    )
-)
 
 @Composable
 fun OnboardingScreen(
     onComplete: () -> Unit,
     viewModel: OnboardingViewModel = viewModel()
 ) {
+    val pages = listOf(
+        OnboardingPage(
+            emoji = "📷",
+            title = stringResource(R.string.onboarding_1_title),
+            subtitle = stringResource(R.string.onboarding_1_subtitle)
+        ),
+        OnboardingPage(
+            emoji = "🍳",
+            title = stringResource(R.string.onboarding_2_title),
+            subtitle = stringResource(R.string.onboarding_2_subtitle)
+        )
+    )
+
     val pagerState = rememberPagerState(pageCount = { pages.size })
     val isLastPage = pagerState.currentPage == pages.lastIndex
 
@@ -78,12 +80,10 @@ fun OnboardingScreen(
             }
         }
 
-        // Кнопка всегда занимает место — нет прыжка layout
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp)
-                .padding(bottom = 0.dp)
         ) {
             this@Column.AnimatedVisibility(
                 visible = isLastPage,
@@ -96,7 +96,7 @@ fun OnboardingScreen(
                         .fillMaxWidth()
                         .height(52.dp)
                 ) {
-                    Text("Начать", fontSize = 17.sp)
+                    Text(stringResource(R.string.onboarding_start), fontSize = 17.sp)
                 }
             }
         }

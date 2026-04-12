@@ -13,13 +13,13 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.util.Locale
 
 class FridgeRepository {
 
     private val api: GroqApi
 
     init {
-        // Не BODY: тело запроса — огромный base64 JPEG
         val logging = HttpLoggingInterceptor().apply {
             redactHeader("Authorization")
             level = if (BuildConfig.DEBUG) {
@@ -34,7 +34,7 @@ class FridgeRepository {
             .build()
 
         val retrofit = Retrofit.Builder()
-            .baseUrl("https://api.groq.com/openai/")
+            .baseUrl("https://api.groq.com/")
             .client(client)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
@@ -50,9 +50,9 @@ class FridgeRepository {
             val request = GroqChatRequest(
                 model = VISION_MODEL,
                 messages = listOf(
-                    buildSystemMessage(),
+                    buildSystemMessage(buildSystemPrompt()),
                     buildUserMessage(
-                        prompt = USER_PROMPT,
+                        prompt = buildUserPrompt(),
                         base64Jpeg = base64Image
                     )
                 ),
@@ -77,8 +77,56 @@ class FridgeRepository {
             .replace(Regex("^\\s*STEP\\s*\\d+[^\\n]*\\n", RegexOption.MULTILINE), "")
             .trim()
 
-    private fun buildSystemMessage(): GroqMessage =
-        GroqMessage(role = "system", content = JsonPrimitive(SYSTEM_PROMPT))
+    private fun getSystemLanguage(): String = Locale.getDefault().language
+
+    private fun buildSystemPrompt(): String =
+        if (getSystemLanguage() == "ru") {
+            """
+Ты — опытный шеф-повар. Ты обожаешь готовить и помогать людям создавать вкусные блюда.
+Отвечай на русском языке. Используй markdown для форматирования.
+            """.trimIndent()
+        } else {
+            """
+You are an experienced chef. You love cooking and helping people create delicious meals.
+Respond in English. Use markdown for formatting.
+            """.trimIndent()
+        }
+
+    private fun buildUserPrompt(): String =
+        if (getSystemLanguage() == "ru") {
+            """
+Посмотри на фото и помоги приготовить что-нибудь вкусное.
+
+**Продукты на фото:**
+Перечисли что видишь. Если продукт в упаковке и непонятно что внутри — опиши упаковку.
+
+**Рецепты:**
+Предложи 2-3 блюда из этих продуктов. Для каждого:
+- Название и время готовки
+- Ингредиенты (с фото + базовые)
+- Шаги приготовления (3-5 шагов)
+
+Если продуктов мало — предложи что докупить.
+            """.trimIndent()
+        } else {
+            """
+Look at this photo and help me cook something delicious.
+
+**Products in the photo:**
+List what you see. If a product is in packaging and you can't tell what's inside — describe the packaging.
+
+**Recipes:**
+Suggest 2-3 dishes from these products. For each:
+- Name and cooking time
+- Ingredients (from photo + basics)
+- Cooking steps (3-5 steps)
+
+If there aren't enough products — suggest what to buy.
+            """.trimIndent()
+        }
+
+    private fun buildSystemMessage(prompt: String): GroqMessage =
+        GroqMessage(role = "system", content = JsonPrimitive(prompt))
 
     private fun buildUserMessage(prompt: String, base64Jpeg: String): GroqMessage {
         val textPart = JsonObject().apply {
@@ -100,30 +148,5 @@ class FridgeRepository {
 
     companion object {
         private const val VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
-
-        private val SYSTEM_PROMPT = """
-Ты — опытный шеф-повар и кулинарный консультант. Твоя задача — помочь людям готовить вкусные блюда из того, что у них есть.
-
-Твои принципы:
-- Ты обожаешь готовить и делиться рецептами
-- Ты креативен, но практичен — предлагаешь реальные блюда
-- Ты честен — если не видишь продукт чётко, говоришь об этом
-- Базовые продукты (соль, перец, масло, вода, специи) есть на любой кухне
-
-Формат ответа: используй markdown — заголовки (##), жирный текст (**), списки (-).
-Отвечай на русском языке.
-        """.trimIndent()
-
-        private val USER_PROMPT = """
-Посмотри на фото и помоги приготовить что-нибудь вкусное.
-
-**Продукты на фото:**
-Перечисли что видишь. Если продукт в упаковке и непонятно что — опиши упаковку.
-
-**Рецепты:**
-Предложи 2-3 реальных блюда из этих продуктов. Для каждого укажи название, время готовки, какие продукты с фото используются, и краткие шаги (3-5).
-
-Если продуктов мало — предложи что докупить для хорошего ужина.
-        """.trimIndent()
     }
 }
