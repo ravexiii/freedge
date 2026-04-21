@@ -1,0 +1,50 @@
+# Privacy Policy / Политика конфиденциальности
+
+**Freedge**
+Last updated / Последнее обновление: April 2026
+
+---
+
+## English
+
+### Information We Collect
+Freedge uses your device camera to take photos of your fridge contents. These photos are sent to Groq API to generate recipe suggestions.
+
+We do not collect, store, or share any personal information. Photos are processed temporarily and are not stored on our servers.
+
+### Camera Permission
+We request camera access solely to capture photos of your fridge for recipe generation. We do not use the camera for any other purpose.
+
+### Third-Party Services
+Freedge uses Groq API (groq.com) for AI-powered recipe generation. Photos are sent to Groq servers for processing. Please review Groq's privacy policy at https://groq.com/privacy-policy
+
+### Data Storage
+- Photos are stored locally on your device only
+- Recipe history is stored locally on your device
+- We do not have access to your data
+
+### Contact
+If you have any questions about this Privacy Policy, contact us at: freedge.app@gmail.com
+
+---
+
+## Русский
+
+### Какие данные мы собираем
+Freedge использует камеру вашего устройства для фотографирования содержимого холодильника. Фотографии отправляются в Groq API для генерации рецептов.
+
+Мы не собираем, не храним и не передаём личные данные. Фотографии обрабатываются временно и не хранятся на наших серверах.
+
+### Разрешение на использование камеры
+Мы запрашиваем доступ к камере исключительно для съёмки содержимого холодильника. Камера не используется в других целях.
+
+### Сторонние сервисы
+Freedge использует Groq API (groq.com) для генерации рецептов на основе ИИ. Фотографии отправляются на серверы Groq для обработки. Ознакомьтесь с политикой конфиденциальности Groq: https://groq.com/privacy-policy
+
+### Хранение данных
+- Фотографии хранятся только локально на вашем устройстве
+- История сканов хранится локально на вашем устройстве
+- Мы не имеем доступа к вашим данным
+
+### Контакты
+По вопросам политики конфиденциальности: freedge.app@gmail.com
