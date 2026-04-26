@@ -22,7 +22,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import kg.freedge.R
+import kg.freedge.app.R
 import kg.freedge.data.db.ScanEntity
 import java.text.SimpleDateFormat
 import java.util.*

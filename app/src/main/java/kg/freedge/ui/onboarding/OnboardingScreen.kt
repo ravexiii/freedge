@@ -19,7 +19,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import kg.freedge.R
+import kg.freedge.app.R
 
 private data class OnboardingPage(val emoji: String, val title: String, val subtitle: String)
 

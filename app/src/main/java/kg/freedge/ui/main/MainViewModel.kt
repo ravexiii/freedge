@@ -5,8 +5,8 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import kg.freedge.BuildConfig
-import kg.freedge.R
+import kg.freedge.app.R
+import kg.freedge.app.BuildConfig
 import kg.freedge.analytics.AnalyticsManager
 import kg.freedge.data.db.FreedgeDatabase
 import kg.freedge.data.repo.FridgeRepository

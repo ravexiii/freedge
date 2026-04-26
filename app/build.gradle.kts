@@ -14,7 +14,7 @@ val localProperties = Properties().apply {
 }
 
 android {
-    namespace = "kg.freedge"
+    namespace = "kg.freedge.app"
     compileSdk = 35
 
     packaging {
@@ -24,7 +24,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "kg.freedge"
+        applicationId = "kg.freedge.app"
         minSdk = 24
         targetSdk = 35
         versionCode = 1

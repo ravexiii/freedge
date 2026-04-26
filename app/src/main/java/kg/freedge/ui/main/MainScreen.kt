@@ -58,7 +58,7 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import dev.jeziellago.compose.markdowntext.MarkdownText
-import kg.freedge.R
+import kg.freedge.app.R
 import kg.freedge.utils.HapticUtils
 import java.io.ByteArrayOutputStream
 import java.io.File

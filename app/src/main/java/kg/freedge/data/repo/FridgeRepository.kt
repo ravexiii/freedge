@@ -4,7 +4,7 @@ import android.util.Base64
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
-import kg.freedge.BuildConfig
+import kg.freedge.app.BuildConfig
 import kg.freedge.data.ImageUtils
 import kg.freedge.data.api.GroqApi
 import kg.freedge.data.api.GroqChatRequest

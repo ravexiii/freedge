@@ -8,7 +8,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import kg.freedge.R
+import kg.freedge.app.R
 import kg.freedge.data.db.FreedgeDatabase
 import kg.freedge.data.db.ScanEntity
 import kg.freedge.data.repo.ScanRepository
