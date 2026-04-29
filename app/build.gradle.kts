@@ -28,12 +28,15 @@ android {
         minSdk = 24
         targetSdk = 35
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         val groqKey = localProperties.getProperty("GROQ_API_KEY").orEmpty()
         buildConfigField("String", "GROQ_API_KEY", "\"${groqKey.replace("\"", "\\\"")}\"")
+
+        val pexelsKey = localProperties.getProperty("PEXELS_API_KEY").orEmpty()
+        buildConfigField("String", "PEXELS_API_KEY", "\"${pexelsKey.replace("\"", "\\\"")}\"")
     }
 
     buildTypes {
@@ -83,6 +86,7 @@ dependencies {
 
     // Coil
     implementation(libs.coil.compose)
+    implementation(libs.androidx.exifinterface)
 
     // Navigation
     implementation(libs.androidx.navigation.compose)
@@ -108,5 +112,5 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     implementation(libs.accompanist.permissions)
-    implementation("androidx.core:core-splashscreen:1.0.1")
+    implementation(libs.androidx.splashscreen)
 }

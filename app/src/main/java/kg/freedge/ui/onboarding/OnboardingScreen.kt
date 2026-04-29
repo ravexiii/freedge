@@ -47,6 +47,7 @@ fun OnboardingScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .safeDrawingPadding()
             .padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -114,7 +115,16 @@ private fun PageContent(page: OnboardingPage) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(text = page.emoji, fontSize = 80.sp)
+        Surface(
+            modifier = Modifier.size(120.dp),
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primaryContainer,
+            tonalElevation = 1.dp
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Text(text = page.emoji, fontSize = 72.sp)
+            }
+        }
         Spacer(modifier = Modifier.height(32.dp))
         Text(
             text = page.title,
