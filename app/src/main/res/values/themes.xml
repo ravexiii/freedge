@@ -5,4 +5,11 @@
         <item name="android:windowBackground">@android:color/white</item>
         <item name="android:windowIsTranslucent">false</item>
     </style>
+
+    <style name="Theme.Freedge.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#2E7D32</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="windowSplashScreenAnimationDuration">500</item>
+        <item name="postSplashScreenTheme">@style/Theme.Freedge</item>
+    </style>
 </resources>

@@ -1,37 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-    Canvas: 108x108, safe zone: 72x72 (x/y: 18–90), circle clip r≈36 from center (54,54).
-
-    Body: x=32–72 (w=40), y=22–86 (h=64), rx=7
-    All handle corners checked: max dist from center = sqrt(24²+25²) ≈ 34.7 < 36 ✓
-    Body top-corner (32,22): dist = sqrt(22²+32²) ≈ 38.8 — корпус чуть выходит, ок для всех форм кроме идеального круга
--->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!--
-        Корпус холодильника (evenOdd — вырезает разделитель морозилки).
-        Rounded rect: x=32..72, y=22..86, rx=7
-        Divider hole: y=44..48 (34% от верха — стандартная пропорция морозилки)
-    -->
     <path
         android:fillColor="#FFFFFF"
         android:fillType="evenOdd"
         android:pathData="
-            M39,22 H65 Q72,22 72,29 V79 Q72,86 65,86 H39 Q32,86 32,79 V29 Q32,22 39,22 Z
-            M32,44 H72 V48 H32 Z" />
+            M41,27 H64 Q70,27 70,33 V76 Q70,82 64,82 H41 Q35,82 35,76 V33 Q35,27 41,27 Z
+            M35,45 H70 V49 H35 Z" />
 
-    <!-- Ручка морозилки: x=72..78, y=29..42, rx=3 -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M72,29 H75 Q78,29 78,32 V39 Q78,42 75,42 H72 Z" />
+        android:pathData="M70,34 H72.5 Q75,34 75,36.5 V42 Q75,44.5 72.5,44.5 H70 Z" />
 
-    <!-- Ручка холодильника: x=72..78, y=51..67, rx=3 -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M72,51 H75 Q78,51 78,54 V64 Q78,67 75,67 H72 Z" />
+        android:pathData="M70,54 H72.5 Q75,54 75,56.5 V64 Q75,66.5 72.5,66.5 H70 Z" />
 
 </vector>

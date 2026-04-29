@@ -9,7 +9,8 @@ import java.io.File
 class ScanRepository(private val db: FreedgeDatabase, private val context: Context) {
 
     suspend fun saveScan(imageBytes: ByteArray, result: String): Long {
-        val file = File(context.filesDir, "scan_${System.currentTimeMillis()}.jpg")
+        val fileName = "scan_${System.currentTimeMillis()}.jpg"
+        val file = File(context.filesDir, "scans").apply { mkdirs() }.resolve(fileName)
         file.writeBytes(imageBytes)
         return db.scanDao().insert(ScanEntity(imagePath = file.absolutePath, result = result))
     }

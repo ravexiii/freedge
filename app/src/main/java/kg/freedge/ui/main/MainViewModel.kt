@@ -1,12 +1,19 @@
 package kg.freedge.ui.main
 
 import android.app.Application
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import kg.freedge.BuildConfig
 import kg.freedge.analytics.AnalyticsManager
+import kg.freedge.app.BuildConfig
 import kg.freedge.data.db.FreedgeDatabase
+import kg.freedge.data.repo.FreedgeErrorCode
+import kg.freedge.data.repo.FreedgeException
 import kg.freedge.data.repo.FridgeRepository
+import kg.freedge.data.repo.RecipeImage
+import kg.freedge.data.repo.RecipeImageQuery
+import kg.freedge.data.repo.RecipeImageRepository
 import kg.freedge.data.repo.ScanRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,12 +24,15 @@ data class MainState(
     val result: String? = null,
     val error: String? = null,
     val imageBytes: ByteArray? = null,
+    val recipeImages: List<RecipeImage> = emptyList(),
+    val isLoadingRecipeImages: Boolean = false,
     val orientationDegrees: Int? = null
 )
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = FridgeRepository()
+    private val recipeImageRepository = RecipeImageRepository()
     private val scanRepository = ScanRepository(FreedgeDatabase.getInstance(application), application)
     private val analytics = AnalyticsManager(application)
 
@@ -40,12 +50,23 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun analyzeImage(bytes: ByteArray) {
         viewModelScope.launch {
-            val apiKey = BuildConfig.GROQ_API_KEY
-            if (apiKey.isBlank()) {
-                analytics.logScanError("missing_api_key")
+            if (!isNetworkAvailable()) {
+                val e = FreedgeException(FreedgeErrorCode.Network)
+                analytics.logScanError(MainErrorHandler.analyticsKey(e))
                 _state.value = _state.value.copy(
                     isLoading = false,
-                    error = "Добавьте GROQ_API_KEY в local.properties в корне проекта"
+                    error = MainErrorHandler.userMessage(getApplication(), e)
+                )
+                return@launch
+            }
+
+            val apiKey = BuildConfig.GROQ_API_KEY
+            if (apiKey.isBlank()) {
+                val e = FreedgeException(FreedgeErrorCode.MissingGroqApiKey)
+                analytics.logScanError(MainErrorHandler.analyticsKey(e))
+                _state.value = _state.value.copy(
+                    isLoading = false,
+                    error = MainErrorHandler.userMessage(getApplication(), e)
                 )
                 return@launch
             }
@@ -53,16 +74,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _state.value = _state.value.copy(isLoading = true, error = null)
 
             repository.analyzeImage(bytes, apiKey)
-                .onSuccess { result ->
+                .onSuccess { analysis ->
                     analytics.logScanSuccess()
-                    _state.value = _state.value.copy(isLoading = false, result = result)
-                    saveScan(bytes, result)
-                }
-                .onFailure { e ->
-                    analytics.logScanError(e.javaClass.simpleName)
                     _state.value = _state.value.copy(
                         isLoading = false,
-                        error = e.message ?: "Ошибка"
+                        result = analysis.displayText
+                    )
+                    saveScan(bytes, analysis.displayText)
+                    loadRecipeImages(analysis.imageQueries)
+                }
+                .onFailure { e ->
+                    analytics.logScanError(MainErrorHandler.analyticsKey(e))
+                    _state.value = _state.value.copy(
+                        isLoading = false,
+                        error = MainErrorHandler.userMessage(getApplication(), e)
                     )
                 }
         }
@@ -74,6 +99,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    private fun loadRecipeImages(imageQueries: List<RecipeImageQuery>) {
+        val apiKey = BuildConfig.PEXELS_API_KEY
+        if (apiKey.isBlank() || imageQueries.isEmpty()) return
+
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isLoadingRecipeImages = true)
+            val images = recipeImageRepository.searchRecipeImages(imageQueries, apiKey)
+            _state.value = _state.value.copy(
+                isLoadingRecipeImages = false,
+                recipeImages = images
+            )
+        }
+    }
+
+    fun clearError() {
+        _state.value = _state.value.copy(error = null)
+    }
+
     fun reset() {
         _state.value = MainState()
     }
@@ -82,4 +125,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         analytics.logScanError("capture_error")
         _state.value = _state.value.copy(isLoading = false, error = message)
     }
+
+    private fun isNetworkAvailable(): Boolean {
+        val cm = getApplication<Application>()
+            .getSystemService(ConnectivityManager::class.java) ?: return false
+        val network = cm.activeNetwork ?: return false
+        val capabilities = cm.getNetworkCapabilities(network) ?: return false
+        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+            capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+    }
+
 }

@@ -7,11 +7,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import kg.freedge.app.R
 import kg.freedge.data.db.FreedgeDatabase
 import kg.freedge.data.db.ScanEntity
 import kg.freedge.data.repo.ScanRepository
 import kg.freedge.ui.main.ResultScreen
-import kotlinx.coroutines.launch
 
 @Composable
 fun ScanDetailScreen(
@@ -24,14 +25,11 @@ fun ScanDetailScreen(
     var imageBytes by remember { mutableStateOf<ByteArray?>(null) }
     var loaded by remember { mutableStateOf(false) }
 
-    val scope = rememberCoroutineScope()
     LaunchedEffect(scanId) {
-        scope.launch {
-            val entity = repository.getScanById(scanId)
-            scan = entity
-            imageBytes = entity?.let { repository.loadImage(it.imagePath) }
-            loaded = true
-        }
+        val entity = repository.getScanById(scanId)
+        scan = entity
+        imageBytes = entity?.let { repository.loadImage(it.imagePath) }
+        loaded = true
     }
 
     when {
@@ -47,9 +45,14 @@ fun ScanDetailScreen(
                 imageBytes = imageBytes,
                 isLoading = false,
                 onRetry = onBack,
-                retryLabel = "Назад"
+                showBackArrow = true,
+                retryLabel = stringResource(R.string.back)
             )
         }
-        else -> onBack()
+        else -> {
+            LaunchedEffect(Unit) {
+                onBack()
+            }
+        }
     }
 }

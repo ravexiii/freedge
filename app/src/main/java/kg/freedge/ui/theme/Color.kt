@@ -2,12 +2,40 @@ package kg.freedge.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Light theme
-val Green40 = Color(0xFF006E2C)
-val GreenGrey40 = Color(0xFF4A7C59)
-val Sage40 = Color(0xFF52796F)
+// Light theme: calm lifestyle pastels, soft enough for daily use.
+val MintPrimary = Color(0xFF6F8F7A)
+val MintOnPrimary = Color(0xFFFFFFFF)
+val MintPrimaryContainer = Color(0xFFE7EFE5)
+val MintOnPrimaryContainer = Color(0xFF25372B)
+val ApricotSecondary = Color(0xFF9B7278)
+val ApricotSecondaryContainer = Color(0xFFF6DFE3)
+val ApricotOnSecondaryContainer = Color(0xFF3F272B)
+val LavenderTertiary = Color(0xFF81758F)
+val LavenderTertiaryContainer = Color(0xFFEDE7F3)
+val LavenderOnTertiaryContainer = Color(0xFF30283A)
+val PastelBackground = Color(0xFFFFFBF7)
+val PastelSurface = Color(0xFFFFFDFB)
+val PastelSurfaceLow = Color(0xFFF7F1EA)
+val PastelSurfaceHigh = Color(0xFFF2E9DD)
+val PastelOutline = Color(0xFFD3C8BD)
+val PastelText = Color(0xFF2F2A25)
+val PastelTextMuted = Color(0xFF756C63)
 
-// Dark theme
-val Green80 = Color(0xFF7BD87F)
-val GreenGrey80 = Color(0xFF9ECBAA)
-val Sage80 = Color(0xFF8DBDB4)
+// Dark theme keeps the same warm identity without becoming neon.
+val MintDarkPrimary = Color(0xFFB9CDBF)
+val MintDarkOnPrimary = Color(0xFF26362B)
+val MintDarkPrimaryContainer = Color(0xFF435649)
+val MintDarkOnPrimaryContainer = Color(0xFFE7EFE5)
+val ApricotDarkSecondary = Color(0xFFE5C0C6)
+val ApricotDarkSecondaryContainer = Color(0xFF65454B)
+val ApricotDarkOnSecondaryContainer = Color(0xFFF6DFE3)
+val LavenderDarkTertiary = Color(0xFFD4C8DD)
+val LavenderDarkTertiaryContainer = Color(0xFF574D63)
+val LavenderDarkOnTertiaryContainer = Color(0xFFEDE7F3)
+val DarkBackground = Color(0xFF171512)
+val DarkSurface = Color(0xFF201D19)
+val DarkSurfaceLow = Color(0xFF29241F)
+val DarkSurfaceHigh = Color(0xFF332B25)
+val DarkOutline = Color(0xFF81776E)
+val DarkText = Color(0xFFF2ECE6)
+val DarkTextMuted = Color(0xFFD1C7BE)

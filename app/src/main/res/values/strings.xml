@@ -1,3 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Freedge</string>
+
+    <!-- Permissions -->
+    <string name="camera_permission_title">Нужен доступ к камере</string>
+    <string name="camera_permission_desc">Чтобы сфотографировать холодильник и подобрать рецепты</string>
+    <string name="permission_allow">Разрешить</string>
+
+    <!-- Camera -->
+    <string name="take_another">Сфотографировать ещё</string>
+
+    <!-- Loading -->
+    <string name="loading_text">Готовлю рецепты</string>
+
+    <!-- Results -->
+    <string name="copy">Скопировать</string>
+    <string name="share">Поделиться</string>
+    <string name="copied">Скопировано</string>
+    <string name="back">Назад</string>
+    <string name="share_footer">\n\n-\nСгенерировано в Freedge</string>
+    <string name="share_chooser_title">Поделиться рецептом</string>
+    <string name="result_photo">Снимок</string>
+    <string name="result_recipes">Идеи для готовки</string>
+    <string name="result_inspiration">Пример подачи</string>
+    <string name="photo_by">Фото: %1$s / Pexels</string>
+
+    <!-- Errors -->
+    <string name="error_no_internet">Нет интернета. Проверьте подключение.</string>
+    <string name="error_generic">Что-то пошло не так</string>
+    <string name="error_missing_api_key">Добавьте GROQ_API_KEY в local.properties в корне проекта</string>
+    <string name="error_empty_response">Не удалось получить ответ</string>
+    <string name="error_api_rate_limited">Сервис временно перегружен. Попробуйте чуть позже.</string>
+    <string name="error_api_auth">Проверьте GROQ_API_KEY: сервис отклонил ключ.</string>
+    <string name="error_api_server">Сервис рецептов сейчас недоступен. Попробуйте позже.</string>
+    <string name="retry">Попробовать снова</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_1_title">Сфотографируйте холодильник</string>
+    <string name="onboarding_1_subtitle">Откройте холодильник, наведите камеру и сделайте снимок</string>
+    <string name="onboarding_2_title">Получите рецепты из того, что есть</string>
+    <string name="onboarding_2_subtitle">Freedge распознает продукты и предложит простые блюда</string>
+    <string name="onboarding_start">Начать</string>
+
+    <!-- History -->
+    <string name="history_title">История</string>
+    <string name="history_short">История</string>
+    <string name="history_empty">Пока нет сканов</string>
+    <string name="delete">Удалить</string>
+    <string name="delete_scan_title">Удалить скан?</string>
+    <string name="delete_scan_message">Фото и рецепт будут удалены из истории.</string>
+    <string name="cancel">Отмена</string>
 </resources>

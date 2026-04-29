@@ -14,7 +14,7 @@ val localProperties = Properties().apply {
 }
 
 android {
-    namespace = "kg.freedge"
+    namespace = "kg.freedge.app"
     compileSdk = 35
 
     packaging {
@@ -24,22 +24,25 @@ android {
     }
 
     defaultConfig {
-        applicationId = "kg.freedge"
+        applicationId = "kg.freedge.app"
         minSdk = 24
         targetSdk = 35
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // Ключ задаётся в local.properties: GROQ_API_KEY=... (файл в .gitignore)
         val groqKey = localProperties.getProperty("GROQ_API_KEY").orEmpty()
         buildConfigField("String", "GROQ_API_KEY", "\"${groqKey.replace("\"", "\\\"")}\"")
+
+        val pexelsKey = localProperties.getProperty("PEXELS_API_KEY").orEmpty()
+        buildConfigField("String", "PEXELS_API_KEY", "\"${pexelsKey.replace("\"", "\\\"")}\"")
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -83,6 +86,7 @@ dependencies {
 
     // Coil
     implementation(libs.coil.compose)
+    implementation(libs.androidx.exifinterface)
 
     // Navigation
     implementation(libs.androidx.navigation.compose)
@@ -108,4 +112,5 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     implementation(libs.accompanist.permissions)
+    implementation(libs.androidx.splashscreen)
 }
