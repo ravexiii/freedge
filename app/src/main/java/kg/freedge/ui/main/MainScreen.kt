@@ -166,7 +166,7 @@ fun PermissionRequest(onRequest: () -> Unit) {
         }
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = stringResource(R.string.camera_permission_title),
+            text = stringResource(R.stспаring.camera_permission_title),
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold
         )

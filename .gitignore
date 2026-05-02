@@ -1,6 +1,7 @@
 # Gradle files
 .gradle/
 build/
+**/build/
 
 # Local configuration file (sdk path, etc)
 local.properties
@@ -31,3 +32,25 @@ google-services.json
 
 # Android Profiling
 *.hprof
+
+# Kotlin Multiplatform
+.kotlin/
+kotlin-js-store/
+
+# Kotlin/Native
+*.klib
+
+# iOS (if using KMP with iOS target)
+iosApp/Pods/
+iosApp/.symlinks/
+iosApp/iosApp.xcworkspace/xcuserdata/
+iosApp/iosApp.xcodeproj/xcuserdata/
+*.xcuserstate
+**/*.xcuserstate
+
+# CocoaPods
+Podfile.lock
+
+# OS files
+.DS_Store
+Thumbs.db

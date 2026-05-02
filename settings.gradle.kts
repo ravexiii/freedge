@@ -22,3 +22,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "Freedge"
 include(":app")
+include(":shared")
