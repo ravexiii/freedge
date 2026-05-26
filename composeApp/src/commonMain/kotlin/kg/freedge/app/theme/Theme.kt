@@ -27,8 +27,20 @@ private val DarkColors = darkColorScheme(
     onPrimary = Color(0xFF003910),
     primaryContainer = Color(0xFF1B5E20),
     onPrimaryContainer = Color(0xFFB8F0C1),
+    secondary = Color(0xFFAED581),
+    onSecondary = Color(0xFF1B3700),
+    secondaryContainer = Color(0xFF33691E),
+    onSecondaryContainer = Color(0xFFDCEDC8),
+    tertiary = Color(0xFFA5D6A7),
+    onTertiary = Color(0xFF003910),
+    tertiaryContainer = Color(0xFF2E7D32),
+    onTertiaryContainer = Color(0xFFE8F5E9),
     background = Color(0xFF0D1B0D),
+    onBackground = Color(0xFFE6F2E6),
     surface = Color(0xFF121F12),
+    onSurface = Color(0xFFE6F2E6),
+    surfaceVariant = Color(0xFF1B2A1B),
+    onSurfaceVariant = Color(0xFFA5C8A5),
 )
 
 @Composable

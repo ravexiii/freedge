@@ -4,7 +4,9 @@ import kg.freedge.core.currentTimeMillis
 import kg.freedge.core.platform.ImageStorage
 import kg.freedge.data.db.FreedgeDatabase
 import kg.freedge.data.db.ScanEntity
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.withContext
 
 class ScanRepository(
     private val db: FreedgeDatabase,
@@ -13,8 +15,13 @@ class ScanRepository(
 
     suspend fun saveScan(imageBytes: ByteArray, result: String): Long {
         val fileName = "scan_${currentTimeMillis()}.jpg"
-        imageStorage.save(fileName, imageBytes)
-        return db.scanDao().insert(ScanEntity(imageFileName = fileName, result = result))
+        withContext(Dispatchers.Default) { imageStorage.save(fileName, imageBytes) }
+        return try {
+            db.scanDao().insert(ScanEntity(imageFileName = fileName, result = result))
+        } catch (e: Throwable) {
+            runCatching { imageStorage.delete(fileName) }
+            throw e
+        }
     }
 
     fun getAllScans(): Flow<List<ScanEntity>> = db.scanDao().getAll()
@@ -22,9 +29,10 @@ class ScanRepository(
     suspend fun getScanById(id: Long): ScanEntity? = db.scanDao().getById(id)
 
     suspend fun deleteScan(scan: ScanEntity) {
-        imageStorage.delete(scan.imageFileName)
         db.scanDao().delete(scan)
+        withContext(Dispatchers.Default) { imageStorage.delete(scan.imageFileName) }
     }
 
-    fun loadScanImage(scan: ScanEntity): ByteArray? = imageStorage.load(scan.imageFileName)
+    suspend fun loadScanImage(scan: ScanEntity): ByteArray? =
+        withContext(Dispatchers.Default) { imageStorage.load(scan.imageFileName) }
 }

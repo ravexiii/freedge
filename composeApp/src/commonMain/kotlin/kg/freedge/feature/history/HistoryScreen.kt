@@ -73,7 +73,7 @@ fun HistoryScreen(
                         scan = scan,
                         onClick = { onScanClick(scan.id) },
                         onDelete = { vm.deleteScan(scan) },
-                        loadImage = { deps.imageStorage.load(scan.imageFileName) },
+                        loadImage = { deps.scanRepository.loadScanImage(scan) },
                         isRu = isRu
                     )
                 }
@@ -87,7 +87,7 @@ private fun ScanItem(
     scan: ScanEntity,
     onClick: () -> Unit,
     onDelete: () -> Unit,
-    loadImage: () -> ByteArray?,
+    loadImage: suspend () -> ByteArray?,
     isRu: Boolean
 ) {
     var showDialog by remember { mutableStateOf(false) }

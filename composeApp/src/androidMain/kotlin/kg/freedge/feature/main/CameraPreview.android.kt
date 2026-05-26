@@ -112,16 +112,19 @@ private fun CameraPreviewWithPermission(
                 val opts = ImageCapture.OutputFileOptions.Builder(file).build()
                 capture.takePicture(opts, executor, object : ImageCapture.OnImageSavedCallback {
                     override fun onImageSaved(output: ImageCapture.OutputFileResults) {
+                        if (!cont.isActive) { file.delete(); return }
                         val raw = file.readBytes()
                         val deg = exifRotation(file)
                         file.delete()
                         cont.resume(rotateJpeg(raw, deg))
                     }
                     override fun onError(e: ImageCaptureException) {
+                        if (!cont.isActive) { file.delete(); return }
                         file.delete()
                         cont.resumeWithException(e)
                     }
                 })
+                cont.invokeOnCancellation { file.delete() }
             }
             onCaptureDone()
             onImageCaptured(bytes)
