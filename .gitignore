@@ -51,6 +51,9 @@ iosApp/iosApp.xcodeproj/xcuserdata/
 # CocoaPods
 Podfile.lock
 
+# iOS API key config (never commit real keys)
+iosApp/iosApp/Config.xcconfig
+
 # OS files
 .DS_Store
 Thumbs.db

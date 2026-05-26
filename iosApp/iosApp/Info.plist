@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDisplayName</key>
+    <string>Freedge</string>
+    <key>CFBundleIdentifier</key>
+    <string>kg.freedge.ios</string>
+    <key>CFBundleName</key>
+    <string>Freedge</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+    <key>UILaunchScreen</key>
+    <dict/>
+    <key>NSCameraUsageDescription</key>
+    <string>Freedge needs camera access to photograph your fridge</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Freedge may save fridge photos to your library</string>
+    <!-- API keys: set via xcconfig or replace below for local dev -->
+    <key>GROQ_API_KEY</key>
+    <string>$(GROQ_API_KEY)</string>
+    <key>PEXELS_API_KEY</key>
+    <string>$(PEXELS_API_KEY)</string>
+</dict>
+</plist>

@@ -1,0 +1,3 @@
+-keep class kg.freedge.** { *; }
+-keep class androidx.room.** { *; }
+-dontwarn kotlinx.**

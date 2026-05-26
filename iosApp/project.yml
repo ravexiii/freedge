@@ -1,0 +1,45 @@
+name: iosApp
+options:
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    IPHONEOS_DEPLOYMENT_TARGET: "16.0"
+    ENABLE_BITCODE: NO
+
+targets:
+  iosApp:
+    type: application
+    platform: iOS
+    deploymentTarget: "16.0"
+    sources:
+      - path: iosApp
+        excludes:
+          - "*.xcconfig"
+          - "*.xcconfig.template"
+          - "Info.plist"
+    info:
+      path: iosApp/Info.plist
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: kg.freedge.ios
+        CODE_SIGN_STYLE: Automatic
+    configFiles:
+      Debug: iosApp/Config.xcconfig
+      Release: iosApp/Config.xcconfig
+    dependencies:
+      - framework: ../composeApp/build/XCFrameworks/debug/ComposeApp.xcframework
+        embed: false
+    preBuildScripts:
+      - name: "Build KMP Framework"
+        script: |
+          cd "$SRCROOT/.."
+          if [ "$CONFIGURATION" = "Release" ]; then
+            ./gradlew :composeApp:assembleReleaseXCFramework
+          else
+            ./gradlew :composeApp:assembleDebugXCFramework
+          fi
+        basedOnDependencyAnalysis: false

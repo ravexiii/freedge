@@ -4,6 +4,12 @@ kotlin = "2.2.10"
 ksp = "2.3.2"
 room = "2.7.1"
 datastore = "1.1.1"
+composeMultiplatform = "1.8.0"
+lifecycleViewmodelKmp = "2.8.4"
+navigationComposeKmp = "2.8.4"
+coil3 = "3.1.0"
+sqliteBundled = "2.5.0"
+markdownRenderer = "0.30.0"
 googleServices = "4.4.2"
 firebaseBom = "33.7.0"
 coreKtx = "1.10.1"
@@ -86,6 +92,25 @@ ktor-client-darwin = { group = "io.ktor", name = "ktor-client-darwin", version.r
 ktor-client-okhttp = { group = "io.ktor", name = "ktor-client-okhttp", version.ref = "ktor" }
 ktor-serialization-kotlinx-json = { group = "io.ktor", name = "ktor-serialization-kotlinx-json", version.ref = "ktor" }
 
+# KMP-ready lifecycle ViewModel (JetBrains fork)
+lifecycle-viewmodel-compose-kmp = { group = "org.jetbrains.androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycleViewmodelKmp" }
+
+# KMP-ready navigation (JetBrains fork)
+navigation-compose-kmp = { group = "org.jetbrains.androidx.navigation", name = "navigation-compose", version.ref = "navigationComposeKmp" }
+
+# Coil 3 for Compose Multiplatform
+coil3-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil3" }
+coil3-network-ktor = { group = "io.coil-kt.coil3", name = "coil-network-ktor3", version.ref = "coil3" }
+
+# SQLite bundled for Room KMP on iOS
+androidx-sqlite-bundled = { group = "androidx.sqlite", name = "sqlite-bundled", version.ref = "sqliteBundled" }
+
+# Markdown renderer for Compose Multiplatform
+multiplatform-markdown-renderer = { group = "com.mikepenz", name = "multiplatform-markdown-renderer-m3", version.ref = "markdownRenderer" }
+
+# DataStore Core (KMP - no Android context dependency)
+androidx-datastore-preferences-core = { group = "androidx.datastore", name = "datastore-preferences-core", version.ref = "datastore" }
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
@@ -95,3 +120,4 @@ kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", versi
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }
+compose-multiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }

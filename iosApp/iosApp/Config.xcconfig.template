@@ -1,0 +1,3 @@
+// Copy this file to Config.xcconfig (git-ignored) and fill in your keys
+GROQ_API_KEY = your_groq_key_here
+PEXELS_API_KEY = your_pexels_key_here
