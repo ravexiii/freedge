@@ -9,8 +9,12 @@ import platform.darwin.dispatch_queue_create
 
 actual class ConnectivityMonitor actual constructor() {
 
+    // Optimistic default: nw_path_monitor delivers the real status asynchronously after start().
+    // Seeding to true avoids a false "no internet" error if the user triggers a network call
+    // before the first path update arrives; an actual offline state surfaces as a regular
+    // network error from the HTTP client instead.
     @Volatile
-    private var connected: Boolean = false
+    private var connected: Boolean = true
 
     private val monitor = nw_path_monitor_create()
 

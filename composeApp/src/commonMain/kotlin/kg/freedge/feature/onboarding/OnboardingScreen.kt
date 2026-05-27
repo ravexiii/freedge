@@ -1,37 +1,53 @@
 package kg.freedge.feature.onboarding
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kg.freedge.app.LocalAppDeps
-import kg.freedge.feature.main.isRussian
+import kg.freedge.app.rememberUiStrings
+import kotlinx.coroutines.launch
 
-private data class OnboardingPage(val emoji: String, val title: String, val subtitle: String)
+private data class OnboardingPage(
+    val icon: ImageVector,
+    val title: String,
+    val subtitle: String
+)
 
 @Composable
 fun OnboardingScreen(onComplete: () -> Unit) {
     val deps = LocalAppDeps.current
     val vm = viewModel<OnboardingViewModel> { OnboardingViewModel(deps.onboardingPrefs) }
-
-    val isRu = remember { isRussian() }
-    val pages = if (isRu) russianPages() else englishPages()
+    val strings = rememberUiStrings()
+    val pages = listOf(
+        OnboardingPage(
+            icon = Icons.Default.PhotoCamera,
+            title = strings.onboardingPhotoTitle,
+            subtitle = strings.onboardingPhotoBody
+        ),
+        OnboardingPage(
+            icon = Icons.Default.Restaurant,
+            title = strings.onboardingRecipesTitle,
+            subtitle = strings.onboardingRecipesBody
+        )
+    )
 
     val pagerState = rememberPagerState(pageCount = { pages.size })
+    val scope = rememberCoroutineScope()
     val isLastPage = pagerState.currentPage == pages.lastIndex
 
     Column(
@@ -42,23 +58,43 @@ fun OnboardingScreen(onComplete: () -> Unit) {
             .padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.weight(1f))
-
-        HorizontalPager(state = pagerState, modifier = Modifier.weight(4f)) { index ->
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+        ) { index ->
             val page = pages[index]
             Column(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = 32.dp, bottom = 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer) {
-                    Text(page.emoji, fontSize = 52.sp, modifier = Modifier.padding(22.dp))
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    tonalElevation = 1.dp
+                ) {
+                    Icon(
+                        imageVector = page.icon,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(104.dp)
+                            .padding(28.dp)
+                    )
                 }
                 Spacer(Modifier.height(28.dp))
-                Text(page.title, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
+                Text(
+                    text = page.title,
+                    style = MaterialTheme.typography.titleLarge,
+                    textAlign = TextAlign.Center
+                )
                 Spacer(Modifier.height(12.dp))
                 Text(
-                    page.subtitle,
+                    text = page.subtitle,
                     style = MaterialTheme.typography.bodyLarge,
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -67,46 +103,44 @@ fun OnboardingScreen(onComplete: () -> Unit) {
         }
 
         Row(
-            modifier = Modifier.padding(vertical = 28.dp),
+            modifier = Modifier.padding(top = 8.dp, bottom = 24.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             repeat(pages.size) { index ->
                 val selected = pagerState.currentPage == index
-                Box(
-                    modifier = Modifier
-                        .size(if (selected) 10.dp else 7.dp)
-                        .clip(CircleShape)
-                        .background(
-                            if (selected) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.outlineVariant
-                        )
+                Surface(
+                    modifier = Modifier.size(width = if (selected) 22.dp else 8.dp, height = 8.dp),
+                    shape = CircleShape,
+                    color = if (selected) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.outlineVariant
+                    },
+                    content = {}
                 )
             }
         }
 
-        Spacer(modifier = Modifier.weight(0.5f))
-
-        AnimatedVisibility(visible = isLastPage, enter = fadeIn(), exit = fadeOut()) {
-            Button(
-                onClick = { vm.completeOnboarding(onComplete) },
-                modifier = Modifier.fillMaxWidth().height(52.dp),
-                shape = MaterialTheme.shapes.medium
-            ) {
-                Text(if (isRu) "Начать" else "Get started", fontWeight = FontWeight.SemiBold)
-            }
+        Button(
+            onClick = {
+                if (isLastPage) {
+                    vm.completeOnboarding(onComplete)
+                } else {
+                    scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) }
+                }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            shape = MaterialTheme.shapes.medium
+        ) {
+            Text(
+                text = if (isLastPage) strings.getStarted else strings.next,
+                fontWeight = FontWeight.SemiBold
+            )
         }
 
         Spacer(modifier = Modifier.height(24.dp))
     }
 }
-
-private fun russianPages() = listOf(
-    OnboardingPage("📷", "Сфотографируйте холодильник", "Откройте холодильник, наведите камеру и сделайте снимок"),
-    OnboardingPage("🍳", "Получите рецепты из того, что есть", "Freedge распознает продукты и предложит простые блюда")
-)
-
-private fun englishPages() = listOf(
-    OnboardingPage("📷", "Take a fridge photo", "Open your fridge, aim the camera and take a shot"),
-    OnboardingPage("🍳", "Get recipes from what you have", "Freedge identifies ingredients and suggests simple dishes")
-)

@@ -4,6 +4,7 @@ import android.app.Application
 import kg.freedge.app.AppDependencies
 import kg.freedge.core.platform.ConnectivityMonitor
 import kg.freedge.core.platform.Haptics
+import kg.freedge.core.platform.ImageCompressor
 import kg.freedge.core.platform.ImageStorage
 import kg.freedge.core.platform.ShareController
 import kg.freedge.data.db.buildRoomDatabase
@@ -30,7 +31,8 @@ class FreedgeApplication : Application() {
             haptics = Haptics(),
             connectivity = ConnectivityMonitor(),
             share = ShareController(),
-            imageStorage = imageStorage
+            imageStorage = imageStorage,
+            imageCompressor = ImageCompressor()
         )
     }
 }

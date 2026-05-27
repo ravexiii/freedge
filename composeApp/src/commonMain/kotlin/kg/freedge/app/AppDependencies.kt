@@ -3,6 +3,7 @@ package kg.freedge.app
 import androidx.compose.runtime.staticCompositionLocalOf
 import kg.freedge.core.platform.ConnectivityMonitor
 import kg.freedge.core.platform.Haptics
+import kg.freedge.core.platform.ImageCompressor
 import kg.freedge.core.platform.ImageStorage
 import kg.freedge.core.platform.ShareController
 import kg.freedge.data.preferences.OnboardingPreferences
@@ -16,7 +17,8 @@ class AppDependencies(
     val haptics: Haptics,
     val connectivity: ConnectivityMonitor,
     val share: ShareController,
-    val imageStorage: ImageStorage
+    val imageStorage: ImageStorage,
+    val imageCompressor: ImageCompressor
 )
 
 val LocalAppDeps = staticCompositionLocalOf<AppDependencies> {

@@ -91,9 +91,13 @@ internal class FreedgeRepository(
             .take(MAX_IMAGES)
 
         for (imageQuery in distinctQueries) {
-            val image = runCatching {
+            val image = try {
                 searchSingleRecipeImage(imageQuery, pexelsApiKey)
-            }.getOrNull()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Throwable) {
+                null
+            }
 
             if (image != null) images += image
         }

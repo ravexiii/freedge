@@ -22,7 +22,15 @@ actual fun CameraPreview(
     triggerCapture: Boolean,
     onCaptureDone: () -> Unit
 ) {
-    val session = remember { IosCameraSession(onImageCaptured, onError, onCaptureDone) }
+    val session = remember { IosCameraSession() }
+
+    // Re-route the session's callbacks to the latest lambdas on every recomposition
+    // so the session never holds a stale closure (e.g. an old ViewModel reference).
+    SideEffect {
+        session.onCaptured = onImageCaptured
+        session.onError = onError
+        session.onCaptureFinished = onCaptureDone
+    }
 
     DisposableEffect(session) {
         session.start()
@@ -45,14 +53,17 @@ actual fun CameraPreview(
 }
 
 @OptIn(ExperimentalForeignApi::class)
-class IosCameraSession(
-    private val onCaptured: (ByteArray) -> Unit,
-    private val onError: (String) -> Unit,
-    private val onCaptureFinished: () -> Unit
-) : NSObject(), AVCapturePhotoCaptureDelegate {
+class IosCameraSession : NSObject(), AVCapturePhotoCaptureDelegate {
 
     val containerView = UIView()
     var previewLayer: AVCaptureVideoPreviewLayer? = null
+
+    // Mutated from main thread (SideEffect runs in composition) and read from main thread
+    // (delegate callbacks dispatch_async to main). No synchronisation needed.
+    var onCaptured: (ByteArray) -> Unit = {}
+    var onError: (String) -> Unit = {}
+    var onCaptureFinished: () -> Unit = {}
+
     private val captureSession = AVCaptureSession()
     private val photoOutput = AVCapturePhotoOutput()
     private var photoOutputAdded = false

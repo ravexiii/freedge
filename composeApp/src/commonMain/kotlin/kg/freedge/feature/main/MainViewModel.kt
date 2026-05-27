@@ -5,9 +5,11 @@ import androidx.lifecycle.viewModelScope
 import kg.freedge.core.platform.AppConfig
 import kg.freedge.core.platform.ConnectivityMonitor
 import kg.freedge.core.platform.Haptics
+import kg.freedge.core.platform.ImageCompressor
 import kg.freedge.data.repo.ScanRepository
 import kg.freedge.shared.FreedgeSharedClient
 import kg.freedge.shared.RecipeImage
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -25,18 +27,21 @@ class MainViewModel(
     private val sharedClient: FreedgeSharedClient,
     private val scanRepository: ScanRepository,
     private val connectivity: ConnectivityMonitor,
-    private val haptics: Haptics
+    private val haptics: Haptics,
+    private val imageCompressor: ImageCompressor
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(MainState())
     val state: StateFlow<MainState> = _state
 
-    fun onImageCaptured(bytes: ByteArray) {
-        _state.value = _state.value.copy(imageBytes = bytes)
-        analyzeImage(bytes)
+    fun onImageCaptured(rawBytes: ByteArray) {
+        // Show the raw capture immediately for snappy UI; compressed bytes replace it
+        // as soon as the (suspend) compressor finishes, before any upload happens.
+        _state.value = _state.value.copy(imageBytes = rawBytes)
+        analyzeImage(rawBytes)
     }
 
-    private fun analyzeImage(bytes: ByteArray) {
+    private fun analyzeImage(rawBytes: ByteArray) {
         viewModelScope.launch {
             if (!connectivity.isConnected()) {
                 _state.value = _state.value.copy(
@@ -57,14 +62,18 @@ class MainViewModel(
             _state.value = _state.value.copy(isLoading = true, error = null)
 
             try {
+                val uploadBytes = imageCompressor.compressForUpload(rawBytes)
+                _state.value = _state.value.copy(imageBytes = uploadBytes)
+
                 val analysis = sharedClient.analyzeImage(
-                    imageBytes = bytes,
+                    imageBytes = uploadBytes,
                     groqApiKey = groqKey,
                     languageCode = currentLanguageCode()
                 )
                 haptics.performSuccess()
                 _state.value = _state.value.copy(isLoading = false, result = analysis.displayText)
-                scanRepository.saveScan(bytes, analysis.displayText)
+
+                persistScan(uploadBytes, analysis.displayText)
 
                 val pexelsKey = AppConfig.pexelsApiKey
                 if (pexelsKey.isNotBlank() && analysis.imageQueries.isNotEmpty()) {
@@ -81,6 +90,18 @@ class MainViewModel(
                 _state.value = _state.value.copy(
                     isLoading = false, error = MainErrorMessages.fromException(e)
                 )
+            }
+        }
+    }
+
+    private fun persistScan(bytes: ByteArray, result: String) {
+        viewModelScope.launch {
+            try {
+                scanRepository.saveScan(bytes, result)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Throwable) {
+                // History persistence is best-effort.
             }
         }
     }
