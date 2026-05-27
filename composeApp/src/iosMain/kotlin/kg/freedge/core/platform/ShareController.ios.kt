@@ -9,6 +9,8 @@ import platform.Foundation.NSData
 import platform.Foundation.dataWithBytes
 import platform.UIKit.UIActivityViewController
 import platform.UIKit.UIApplication
+import platform.UIKit.UIViewController
+import platform.UIKit.UIWindow
 
 actual class ShareController actual constructor() {
 
@@ -25,7 +27,7 @@ actual class ShareController actual constructor() {
         }
 
         val controller = UIActivityViewController(activityItems = items, applicationActivities = null)
-        val rootVc = UIApplication.sharedApplication.keyWindow?.rootViewController ?: return
+        val rootVc = currentRootViewController() ?: return
 
         controller.popoverPresentationController?.apply {
             sourceView = rootVc.view
@@ -41,4 +43,16 @@ actual class ShareController actual constructor() {
 
         rootVc.presentViewController(controller, animated = true, completion = null)
     }
+
+    private fun currentRootViewController(): UIViewController? {
+        val keyWindow = UIApplication.sharedApplication.windows
+            .filterIsInstance<UIWindow>()
+            .lastOrNull()
+            ?: UIApplication.sharedApplication.keyWindow
+
+        return keyWindow?.rootViewController?.topMostPresented()
+    }
+
+    private tailrec fun UIViewController.topMostPresented(): UIViewController =
+        presentedViewController?.topMostPresented() ?: this
 }

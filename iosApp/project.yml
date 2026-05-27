@@ -28,10 +28,10 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: kg.freedge.ios
         CODE_SIGN_STYLE: Automatic
     configFiles:
-      Debug: iosApp/Config.xcconfig
-      Release: iosApp/Config.xcconfig
+      Debug: iosApp/Config.defaults.xcconfig
+      Release: iosApp/Config.defaults.xcconfig
     dependencies:
-      - framework: ../composeApp/build/XCFrameworks/debug/ComposeApp.xcframework
+      - framework: ../composeApp/build/XCFrameworks/active/ComposeApp.xcframework
         embed: false
     preBuildScripts:
       - name: "Build KMP Framework"
@@ -42,4 +42,9 @@ targets:
           else
             ./gradlew :composeApp:assembleDebugXCFramework
           fi
+          FRAMEWORK_CONFIGURATION=$(echo "$CONFIGURATION" | tr '[:upper:]' '[:lower:]')
+          rm -rf composeApp/build/XCFrameworks/active
+          mkdir -p composeApp/build/XCFrameworks/active
+          cp -R "composeApp/build/XCFrameworks/$FRAMEWORK_CONFIGURATION/ComposeApp.xcframework" \
+            "composeApp/build/XCFrameworks/active/ComposeApp.xcframework"
         basedOnDependencyAnalysis: false

@@ -1,0 +1,5 @@
+// Default build settings for clean checkouts. Create Config.xcconfig for local API keys.
+GROQ_API_KEY =
+PEXELS_API_KEY =
+
+#include? "Config.xcconfig"

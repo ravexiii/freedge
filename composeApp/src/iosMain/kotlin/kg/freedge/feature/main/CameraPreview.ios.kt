@@ -22,7 +22,7 @@ actual fun CameraPreview(
     triggerCapture: Boolean,
     onCaptureDone: () -> Unit
 ) {
-    val session = remember { IosCameraSession(onImageCaptured, onError) }
+    val session = remember { IosCameraSession(onImageCaptured, onError, onCaptureDone) }
 
     DisposableEffect(session) {
         session.start()
@@ -31,8 +31,7 @@ actual fun CameraPreview(
 
     LaunchedEffect(triggerCapture) {
         if (triggerCapture) {
-            session.capturePhoto()
-            onCaptureDone()
+            if (!session.capturePhoto()) onCaptureDone()
         }
     }
 
@@ -48,13 +47,16 @@ actual fun CameraPreview(
 @OptIn(ExperimentalForeignApi::class)
 class IosCameraSession(
     private val onCaptured: (ByteArray) -> Unit,
-    private val onError: (String) -> Unit
+    private val onError: (String) -> Unit,
+    private val onCaptureFinished: () -> Unit
 ) : NSObject(), AVCapturePhotoCaptureDelegate {
 
     val containerView = UIView()
     var previewLayer: AVCaptureVideoPreviewLayer? = null
     private val captureSession = AVCaptureSession()
     private val photoOutput = AVCapturePhotoOutput()
+    private var photoOutputAdded = false
+    private var isCapturing = false
 
     fun start() {
         AVCaptureDevice.requestAccessForMediaType(AVMediaTypeVideo) { granted ->
@@ -85,7 +87,14 @@ class IosCameraSession(
         }
 
         if (captureSession.canAddInput(input)) captureSession.addInput(input)
-        if (captureSession.canAddOutput(photoOutput)) captureSession.addOutput(photoOutput)
+        if (captureSession.canAddOutput(photoOutput)) {
+            captureSession.addOutput(photoOutput)
+            photoOutputAdded = true
+        } else {
+            onError("Cannot add photo output")
+            captureSession.commitConfiguration()
+            return
+        }
         captureSession.commitConfiguration()
 
         val layer = AVCaptureVideoPreviewLayer(session = captureSession)
@@ -99,9 +108,16 @@ class IosCameraSession(
         }
     }
 
-    fun capturePhoto() {
+    fun capturePhoto(): Boolean {
+        if (isCapturing) return true
+        if (!photoOutputAdded) {
+            onError("Camera is not ready")
+            return false
+        }
+        isCapturing = true
         val settings = AVCapturePhotoSettings.photoSettings()
         photoOutput.capturePhotoWithSettings(settings, delegate = this)
+        return true
     }
 
     fun stop() {
@@ -117,16 +133,28 @@ class IosCameraSession(
     ) {
         dispatch_async(dispatch_get_main_queue()) {
             if (error != null) {
-                onError(error.localizedDescription); return@dispatch_async
+                onError(error.localizedDescription)
+                finishCapture()
+                return@dispatch_async
             }
             val data = didFinishProcessingPhoto.fileDataRepresentation()
-                ?: run { onError("Failed to get image data"); return@dispatch_async }
+                ?: run {
+                    onError("Failed to get image data")
+                    finishCapture()
+                    return@dispatch_async
+                }
             val size = data.length.toInt()
             val bytes = ByteArray(size)
             if (size > 0) {
                 bytes.usePinned { pinned -> memcpy(pinned.addressOf(0), data.bytes, data.length) }
             }
             onCaptured(bytes)
+            finishCapture()
         }
+    }
+
+    private fun finishCapture() {
+        isCapturing = false
+        onCaptureFinished()
     }
 }

@@ -11,8 +11,8 @@ private val KEY_ONBOARDING_DONE = booleanPreferencesKey("onboarding_completed")
 
 class OnboardingPreferences(private val dataStore: DataStore<Preferences>) {
 
-    val isCompleted: Flow<Boolean?> = dataStore.data
-        .map { it[KEY_ONBOARDING_DONE] }
+    val isCompleted: Flow<Boolean> = dataStore.data
+        .map { it[KEY_ONBOARDING_DONE] ?: false }
 
     suspend fun setCompleted() {
         dataStore.edit { it[KEY_ONBOARDING_DONE] = true }

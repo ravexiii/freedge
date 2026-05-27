@@ -50,7 +50,6 @@ kotlin {
             implementation(libs.coil3.network.ktor)
 
             implementation(libs.androidx.room.runtime)
-            implementation(libs.androidx.room.ktx)
             implementation(libs.androidx.datastore.preferences.core)
 
             implementation(libs.multiplatform.markdown.renderer)
